@@ -1219,11 +1219,11 @@ function LeadsView({ funnelId, clientId, onBack }) {
           </div>
           {leads.map((lead) => (
             <div key={lead.id} style={v.tableRow}>
-              <span style={{ flex: 1, color: '#52525b', fontSize: 12 }}>
+              <span style={{ flex: 1, color: '#3f3f46', fontSize: 13, fontWeight: 500 }}>
                 {new Date(lead.created_at).toLocaleDateString('es-CO')}
               </span>
               {(funnel?.form_fields || []).filter(f => f.required).map(f => (
-                <span key={f.name} style={{ flex: 2, color: '#e4e4e7', fontSize: 13 }}>
+                <span key={f.name} style={{ flex: 2, color: '#1e293b', fontSize: 13, fontWeight: 500 }}>
                   {lead.data?.[f.name] || '—'}
                 </span>
               ))}
@@ -1467,7 +1467,7 @@ export default function App() {
         <div style={s.sideTop}>
           <div style={s.brand}>
             <img 
-              src="/logo_blanco.png" 
+              src="/logo_kiuFlow_blanco.png" 
               alt="Logo de la Empresa" 
               style={{ maxHeight: '42px', maxWidth: '100%', objectFit: 'contain' }} 
               onError={(e) => { 
@@ -1607,7 +1607,7 @@ const s = {
   },
   sideTop: { display: "flex", flexDirection: "column", gap: 0 },
   brand: {
-    display: "flex", alignItems: "center", gap: 12,
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
     padding: "20px 16px 16px", borderBottom: "1px solid #C02245", marginBottom: 0,
   },
   brandMark: {
