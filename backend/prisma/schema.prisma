@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Client {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  initials     String?
+  max_landings Int       @default(1)
+  projects     Project[]
+  funnels      Funnel[]
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  public_slug String   @unique
+  client_id   Int
+  client      Client   @relation(fields: [client_id], references: [id])
+  name        String
+  template_id Int?
+  html        String?
+  css         String?
+  json_data   String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+model Template {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  category    String?
+  thumbnail   String?
+  html        String?
+  css         String?
+}
+
+model Funnel {
+  id              Int      @id @default(autoincrement())
+  client_id       Int
+  client          Client   @relation(fields: [client_id], references: [id])
+  public_slug     String   @unique
+  title           String
+  highlight_text  String?
+  video_url       String?
+  video_type      String   @default("youtube")
+  theme           String   @default("dark")
+  bg_color        String?
+  bg_image        String?
+  cta_color       String?
+  cta_text        String   @default("Quiero inscribirme")
+  locked_btn_text String?
+  form_fields     String   // JSON string
+  video_threshold Int      @default(90)
+  status          String   @default("draft")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  leads           Lead[]
+}
+
+model Lead {
+  id         Int      @id @default(autoincrement())
+  funnel_id  Int
+  funnel     Funnel   @relation(fields: [funnel_id], references: [id])
+  data_json  String   // JSON string
+  ip         String?
+  user_agent String?
+  created_at DateTime @default(now())
+}

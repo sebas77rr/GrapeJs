@@ -1,0 +1,195 @@
+{
+  "clients": [
+    {
+      "id": 1,
+      "name": "Acme Corp",
+      "email": "acme@demo.com",
+      "initials": "AC",
+      "max_landings": 1
+    },
+    {
+      "id": 2,
+      "name": "Nova Digital",
+      "email": "nova@demo.com",
+      "initials": "ND",
+      "max_landings": 1
+    },
+    {
+      "id": 3,
+      "name": "Peak Studio",
+      "email": "peak@demo.com",
+      "initials": "PS",
+      "max_landings": 1
+    }
+  ],
+  "projects": [
+    {
+      "id": 14,
+      "public_slug": "4d7wdv29",
+      "client_id": 1,
+      "name": "Pruebalanding",
+      "template_id": 1,
+      "created_at": "2026-05-22T20:52:40.073Z",
+      "updated_at": "2026-05-22T20:54:13.583Z"
+    }
+  ],
+  "templates": [
+    {
+      "id": 1,
+      "name": "Landing Hero",
+      "description": "Página hero con stats y CTA principal",
+      "category": "Marketing",
+      "thumbnail": "🚀",
+      "html": "<section style=\"background:#0a0a1a;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;padding:40px 20px;\">\n  <div style=\"text-align:center;max-width:700px;\">\n    <p style=\"color:#a78bfa;font-size:13px;letter-spacing:4px;text-transform:uppercase;margin-bottom:16px;\">Tu Producto Aquí</p>\n    <h1 style=\"color:#ffffff;font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;margin:0 0 20px;line-height:1.1;\">\n      El título que<br/><span style=\"color:#7c3aed;\">convierte visitas.</span>\n    </h1>\n    <p style=\"color:#94a3b8;font-size:1.1rem;margin-bottom:40px;line-height:1.7;\">\n      Describe tu propuesta de valor en dos líneas. Claro, directo y orientado al beneficio.\n    </p>\n    <a href=\"#\" style=\"background:#7c3aed;color:#fff;padding:16px 40px;border-radius:50px;font-size:1rem;font-weight:700;text-decoration:none;display:inline-block;margin-right:12px;\">Comenzar gratis</a>\n    <a href=\"#\" style=\"color:#a78bfa;font-size:1rem;text-decoration:none;border-bottom:1px solid #a78bfa;padding-bottom:2px;\">Ver demo</a>\n  </div>\n  <div style=\"display:flex;gap:32px;margin-top:80px;flex-wrap:wrap;justify-content:center;\">\n    <div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px 32px;text-align:center;color:#fff;min-width:160px;\">\n      <div style=\"font-size:2rem;font-weight:800;color:#7c3aed;\">10K+</div>\n      <div style=\"font-size:0.85rem;color:#94a3b8;margin-top:6px;\">Clientes</div>\n    </div>\n    <div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px 32px;text-align:center;color:#fff;min-width:160px;\">\n      <div style=\"font-size:2rem;font-weight:800;color:#7c3aed;\">99%</div>\n      <div style=\"font-size:0.85rem;color:#94a3b8;margin-top:6px;\">Satisfacción</div>\n    </div>\n    <div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px 32px;text-align:center;color:#fff;min-width:160px;\">\n      <div style=\"font-size:2rem;font-weight:800;color:#7c3aed;\">24/7</div>\n      <div style=\"font-size:0.85rem;color:#94a3b8;margin-top:6px;\">Soporte</div>\n    </div>\n  </div>\n</section>",
+      "css": "body{margin:0;padding:0;}"
+    },
+    {
+      "id": 2,
+      "name": "Pricing Page",
+      "description": "Página de precios con 2 planes y CTA",
+      "category": "Marketing",
+      "thumbnail": "💰",
+      "html": "<section style=\"background:#f8fafc;min-height:100vh;padding:80px 20px;font-family:'Segoe UI',sans-serif;\">\n  <div style=\"text-align:center;margin-bottom:60px;\">\n    <h2 style=\"font-size:2.5rem;font-weight:800;color:#0f172a;margin:0 0 12px;\">Elige tu plan</h2>\n    <p style=\"color:#64748b;font-size:1.1rem;\">Sin contratos. Cancela cuando quieras.</p>\n  </div>\n  <div style=\"display:flex;gap:24px;max-width:800px;margin:0 auto;flex-wrap:wrap;justify-content:center;\">\n    <div style=\"background:#fff;border:2px solid #e2e8f0;border-radius:20px;padding:36px 28px;flex:1;min-width:240px;text-align:center;\">\n      <div style=\"font-size:0.8rem;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;\">Básico</div>\n      <div style=\"font-size:3rem;font-weight:800;color:#0f172a;\">$9<span style=\"font-size:1rem;color:#64748b;\">/mes</span></div>\n      <ul style=\"list-style:none;padding:0;margin:24px 0;text-align:left;color:#475569;font-size:0.95rem;line-height:2;\">\n        <li>✓ 1 landing page</li><li>✓ Soporte email</li><li style=\"color:#cbd5e1;\">✗ Analytics</li>\n      </ul>\n      <a href=\"#\" style=\"display:block;border:2px solid #7c3aed;color:#7c3aed;padding:12px;border-radius:50px;font-weight:700;text-decoration:none;\">Elegir</a>\n    </div>\n    <div style=\"background:#7c3aed;border-radius:20px;padding:36px 28px;flex:1;min-width:240px;text-align:center;position:relative;\">\n      <div style=\"position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#000;font-size:0.75rem;font-weight:700;padding:4px 16px;border-radius:20px;\">MÁS POPULAR</div>\n      <div style=\"font-size:0.8rem;font-weight:700;color:#ddd6fe;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;\">Pro</div>\n      <div style=\"font-size:3rem;font-weight:800;color:#fff;\">$29<span style=\"font-size:1rem;color:#c4b5fd;\">/mes</span></div>\n      <ul style=\"list-style:none;padding:0;margin:24px 0;text-align:left;color:#e9d5ff;font-size:0.95rem;line-height:2;\">\n        <li>✓ 10 landing pages</li><li>✓ Analytics avanzado</li><li>✓ Soporte prioritario</li>\n      </ul>\n      <a href=\"#\" style=\"display:block;background:#fff;color:#7c3aed;padding:12px;border-radius:50px;font-weight:700;text-decoration:none;\">Elegir</a>\n    </div>\n  </div>\n</section>",
+      "css": "body{margin:0;padding:0;}"
+    },
+    {
+      "id": 3,
+      "name": "Blank Canvas",
+      "description": "Lienzo en blanco para empezar desde cero",
+      "category": "General",
+      "thumbnail": "⬜",
+      "html": "<section style=\"min-height:100vh;display:flex;align-items:center;justify-content:center;background:#ffffff;font-family:'Segoe UI',sans-serif;\">\n  <div style=\"text-align:center;color:#94a3b8;\">\n    <div style=\"font-size:48px;margin-bottom:16px;\">✏️</div>\n    <p style=\"font-size:1.2rem;margin:0;\">Empieza a diseñar aquí</p>\n    <p style=\"font-size:0.9rem;margin-top:8px;\">Arrastra bloques desde el panel lateral</p>\n  </div>\n</section>",
+      "css": "body{margin:0;padding:0;}"
+    }
+  ],
+  "_nextId": {
+    "projects": 17,
+    "funnels": 7,
+    "leads": 3
+  },
+  "funnels": [
+    {
+      "id": 4,
+      "client_id": 1,
+      "public_slug": "qzyhy4ey",
+      "title": "hola",
+      "highlight_text": "hola",
+      "video_url": "https://youtu.be/ElN_4vUvTPs?si=hWiNd6UQ5DxS0_En",
+      "video_type": "youtube",
+      "cta_text": "Quiero inscribirme",
+      "form_fields": [
+        {
+          "name": "nombre",
+          "label": "Nombre completo",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "email",
+          "label": "Correo electrónico",
+          "type": "email",
+          "required": true
+        },
+        {
+          "name": "telefono",
+          "label": "Teléfono / WhatsApp",
+          "type": "tel",
+          "required": true
+        },
+        {
+          "name": "empresa",
+          "label": "Empresa",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "mensaje",
+          "label": "Mensaje",
+          "type": "textarea",
+          "required": false
+        }
+      ],
+      "video_threshold": 65,
+      "status": "published",
+      "created_at": "2026-05-23T14:56:31.101Z",
+      "updated_at": "2026-05-23T14:56:31.110Z"
+    },
+    {
+      "id": 6,
+      "client_id": 2,
+      "public_slug": "zeiikhlh",
+      "title": "prueba",
+      "highlight_text": "prueba",
+      "video_url": "https://youtu.be/ElN_4vUvTPs?si=hWiNd6UQ5DxS0_En",
+      "video_type": "youtube",
+      "theme": "light",
+      "cta_text": "PRUEBA",
+      "form_fields": [
+        {
+          "name": "nombre",
+          "label": "Nombre completo",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "email",
+          "label": "Correo electrónico",
+          "type": "email",
+          "required": true
+        },
+        {
+          "name": "telefono",
+          "label": "Teléfono / WhatsApp",
+          "type": "tel",
+          "required": true
+        },
+        {
+          "name": "empresa",
+          "label": "Empresa",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "mensaje",
+          "label": "Mensaje",
+          "type": "textarea",
+          "required": true
+        }
+      ],
+      "video_threshold": 90,
+      "status": "published",
+      "created_at": "2026-05-23T15:10:05.406Z",
+      "updated_at": "2026-05-23T15:24:14.263Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": 1,
+      "funnel_id": 3,
+      "data": {
+        "nombre": "Sebastian Ramirez",
+        "email": "sebasramirez893@gmail.com",
+        "telefono": "3005925026",
+        "empresa": "",
+        "mensaje": "Hola esto es una prueba"
+      },
+      "created_at": "2026-05-23T14:52:30.426Z",
+      "ip": "::1",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+    },
+    {
+      "id": 2,
+      "funnel_id": 6,
+      "data": {
+        "nombre": "Sebastian Ramirez",
+        "email": "sebasramirez893@gmail.com",
+        "telefono": "3132702464",
+        "empresa": "",
+        "mensaje": "Prueba"
+      },
+      "created_at": "2026-05-23T15:21:59.167Z",
+      "ip": "::1",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+    }
+  ]
+}

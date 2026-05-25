@@ -1,0 +1,17 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  background: #0c0c0f;
+  color: #e4e4e7;
+  -webkit-font-smoothing: antialiased;
+}
