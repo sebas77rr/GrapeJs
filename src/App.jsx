@@ -486,16 +486,16 @@ function BuilderView({ projectId, clientId, onBack }) {
     storage: {
       type: "self",
       onLoad: async () => {
-        if (!projectIdRef.current || !clientIdRef.current) return undefined;
+        if (!projectIdRef.current || !clientIdRef.current) return {};
         try {
           const data = await api.getProject(projectIdRef.current, clientIdRef.current);
-          if (data.project?.json_data) {
+          if (data.project && data.project.json_data) {
             return data.project.json_data;
           }
-          return undefined;
+          return {}; // Devuelve objeto vacío en lugar de undefined para evitar el crash del SDK
         } catch (e) {
           console.error("Error loading project:", e);
-          return undefined;
+          return {};
         }
       },
       onSave: async (projectData, editorParam) => {
