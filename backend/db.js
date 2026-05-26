@@ -97,8 +97,11 @@ module.exports = {
         cta_color: cta_color || '',
         locked_btn_text: locked_btn_text || '',
         cta_text: cta_text || '¡Quiero inscribirme!',
+
+
         form_fields: typeof form_fields === 'string' ? form_fields : JSON.stringify(form_fields || defaultFields),
         video_threshold: video_threshold || 90,
+        
         status: 'draft'
       }
     });

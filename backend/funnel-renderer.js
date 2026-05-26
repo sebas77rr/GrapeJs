@@ -421,7 +421,7 @@ function renderFunnelLanding(funnel) {
 
   <script>
     (function() {
-      // ── Configuración ──
+      // ── Configuración ──  
       var THRESHOLD = ${threshold};
       var CTA_TEXT = ${JSON.stringify(ctaText)};
       var FORM_URL = ${JSON.stringify(formUrl)};
