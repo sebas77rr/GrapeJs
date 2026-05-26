@@ -12,6 +12,8 @@
   "dependencies": {
     "@grapesjs/studio-sdk": "latest",
     "grapesjs": "^0.22.16",
+    "grapesjs-blocks-basic": "^1.0.2",
+    "grapesjs-plugin-forms": "^2.0.6",
     "grapesjs-preset-webpage": "^1.0.3",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",

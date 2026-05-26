@@ -4,6 +4,8 @@ import "@grapesjs/studio-sdk/style";
 import grapesjs from "grapesjs";
 import "grapesjs/dist/css/grapes.min.css";
 import gjsPresetWebpage from "grapesjs-preset-webpage";
+import gjsBlocksBasic from "grapesjs-blocks-basic";
+import gjsPluginForms from "grapesjs-plugin-forms";
 import "./builder-theme.css";
 import { Play, Pause, ExternalLink, Users, Trash2, Link2, MonitorPlay, Palette, Lock, Home, LayoutDashboard, MousePointerClick, Settings, Edit3, ArrowLeft, CheckCircle2, ChevronRight, Check, BarChart3 } from "lucide-react";
 
@@ -191,8 +193,8 @@ function DashboardView({ client, projects, onNavigate }) {
                   <button style={v.tableBtn} onClick={() => onNavigate("classic-builder", p.id)}>
                     Editar Clásico
                   </button>
-                  <button style={{...v.tableBtn, color: "#818cf8"}} onClick={() => onNavigate("builder", p.id)} title="Editor Pro (Requiere Licencia en Prod)">
-                    Pro
+                  <button style={{...v.tableBtn, color: "#818cf8"}} onClick={() => onNavigate("builder", p.id)} title="Requiere Licencia en Producción">
+                    Licencia
                   </button>
                 </span>
               </div>
@@ -276,9 +278,9 @@ function LandingsView({ client, projects, onNavigate, onDelete, onRefresh }) {
                   <button
                     style={{ ...v.btnGhost, fontSize: 12, padding: "6px 14px", color: "#818cf8", borderColor: "#818cf8", flex: 1, minWidth: "45%" }}
                     onClick={() => onNavigate("builder", p.id)}
-                    title="Editor Pro (Requiere Licencia en Prod)"
+                    title="Requiere Licencia en Producción"
                   >
-                    Editor Pro
+                    Licencia
                   </button>
                   <button
                     style={{ ...v.btnPrimary, background: "#27272a", fontSize: 12, padding: "6px 14px", flex: 1 }}
@@ -645,11 +647,11 @@ function BuilderView({ projectId, clientId, onBack }) {
 function ClassicBuilderView({ projectId, clientId, onBack }) {
   const [saveStatus, setSaveStatus] = useState("saved");
   const [projectName, setProjectName] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const editorRef = useRef(null);
   const containerRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
-  // Cargar info del proyecto primero
   useEffect(() => {
     if (projectId && clientId) {
       api.getProject(projectId, clientId).then((data) => {
@@ -675,10 +677,28 @@ function ClassicBuilderView({ projectId, clientId, onBack }) {
       fromElement: false,
       height: '100%',
       width: 'auto',
-      storageManager: false, // Manejo manual
-      plugins: [gjsPresetWebpage],
+      storageManager: false,
+      plugins: [gjsPresetWebpage, gjsBlocksBasic, gjsPluginForms],
       pluginsOpts: {
-        [gjsPresetWebpage]: { /* opciones */ }
+        [gjsPresetWebpage]: {},
+        [gjsBlocksBasic]: {
+          blocks: ['column1','column2','column3','column3-7','text','link','image','video','map','link-block','quote','text-basic'],
+          flexGrid: true,
+          stylePrefix: 'gjs-',
+          addBasicStyle: true,
+        },
+        [gjsPluginForms]: {},
+      },
+      blockManager: {
+        appendTo: '.gjs-pn-views-container',
+        blocks: []
+      },
+      deviceManager: {
+        devices: [
+          { name: 'Desktop', width: '' },
+          { name: 'Tablet', width: '768px', widthMedia: '992px' },
+          { name: 'Mobile', width: '320px', widthMedia: '480px' },
+        ]
       },
       projectData: initialData && Object.keys(initialData).length > 0 ? initialData : null,
     });
@@ -686,10 +706,20 @@ function ClassicBuilderView({ projectId, clientId, onBack }) {
     editorRef.current = editor;
     setLoading(false);
 
-    // Track cambios
-    editor.on("update", () => {
-      setSaveStatus("unsaved");
-    });
+    editor.on("update", () => setSaveStatus("unsaved"));
+  };
+
+  // Esconder/mostrar la barra lateral rosada del app (no la de GrapesJS)
+  const toggleAppSidebar = () => {
+    const sidebar = document.querySelector('nav');
+    if (sidebar) {
+      if (sidebarOpen) {
+        sidebar.style.display = 'none';
+      } else {
+        sidebar.style.display = 'flex';
+      }
+      setSidebarOpen(!sidebarOpen);
+    }
   };
 
   const saveStatusColor = saveStatus === "saved" ? "#4ade80" : saveStatus === "saving" ? "#facc15" : "#f87171";
@@ -715,32 +745,44 @@ function ClassicBuilderView({ projectId, clientId, onBack }) {
       {/* ── TOPBAR ── */}
       <div style={b.topbar}>
         <div style={b.topLeft}>
-          <button style={b.backBtn} onClick={onBack}>
-            ← Volver
+          <button
+            style={{ ...b.backBtn, background: sidebarOpen ? '#f1f5f9' : '#DB2C52', color: sidebarOpen ? '#475569' : '#fff', transition: 'all 0.2s' }}
+            onClick={toggleAppSidebar}
+            title={sidebarOpen ? 'Ocultar panel lateral' : 'Mostrar panel lateral'}
+          >
+            {sidebarOpen ? '◀ Ocultar Panel' : '▶ Mostrar Panel'}
           </button>
-          <div style={{ height: 18, width: 1, background: "#1c1c22" }} />
+          <div style={{ height: 18, width: 1, background: "#e2e8f0" }} />
+          <button style={b.backBtn} onClick={onBack}>← Volver</button>
+          <div style={{ height: 18, width: 1, background: "#e2e8f0" }} />
           <span style={{ color: "#71717a", fontSize: 13, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {projectName || "Cargando..."}
           </span>
         </div>
         <div style={b.topRight}>
-          <button style={{...v.btnPrimary, background: "#4f46e5", padding: "6px 14px", fontSize: 13}} onClick={handleManualSave}>
+          <button style={{...v.btnPrimary, background: "#4f46e5", padding: "6px 18px", fontSize: 13, borderRadius: 8}} onClick={handleManualSave}>
             💾 Guardar
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: saveStatusColor }} />
-            <span style={{ color: "#52525b", fontSize: 12 }}>{saveStatusText}</span>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: saveStatusColor, boxShadow: `0 0 6px ${saveStatusColor}` }} />
+            <span style={{ color: "#64748b", fontSize: 12 }}>{saveStatusText}</span>
           </div>
-          <div style={{ height: 18, width: 1, background: "#1c1c22" }} />
-          <div style={{ color: "#52525b", fontSize: 11, padding: "4px 8px", background: "rgba(16, 185, 129, 0.1)", borderRadius: 5, color: "#10b981" }}>
-            GrapesJS Clásico Pro
+          <div style={{ height: 18, width: 1, background: "#e2e8f0" }} />
+          <div style={{ color: "#10b981", fontSize: 11, padding: "4px 10px", background: "rgba(16,185,129,0.08)", borderRadius: 6, fontWeight: 600, border: '1px solid rgba(16,185,129,0.2)' }}>
+            ✓ Open Source
           </div>
         </div>
       </div>
 
       {/* ── CLASSIC EDITOR ── */}
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-        {loading && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", zIndex: 10 }}>Cargando Editor Clásico...</div>}
+        {loading && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: 'column', alignItems: "center", justifyContent: "center", background: "#f8fafc", zIndex: 10, gap: 12 }}>
+            <div style={{ width: 36, height: 36, border: '3px solid #e2e8f0', borderTop: '3px solid #4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ color: '#64748b', fontSize: 14 }}>Cargando Editor...</span>
+          </div>
+        )}
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
       </div>
     </div>
