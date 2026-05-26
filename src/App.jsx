@@ -7,7 +7,7 @@ import gjsPresetWebpage from "grapesjs-preset-webpage";
 import gjsBlocksBasic from "grapesjs-blocks-basic";
 import gjsPluginForms from "grapesjs-plugin-forms";
 import "./builder-theme.css";
-import { Play, Pause, ExternalLink, Users, Trash2, Link2, MonitorPlay, Palette, Lock, Home, LayoutDashboard, MousePointerClick, Settings, Edit3, ArrowLeft, CheckCircle2, ChevronRight, Check, BarChart3 } from "lucide-react";
+import { Play, Pause, ExternalLink, Users, Trash2, Link2, MonitorPlay, Palette, Lock, Home, LayoutDashboard, MousePointerClick, Settings, Edit3, ArrowLeft, CheckCircle2, ChevronRight, Check, BarChart3, Bell, MessageSquare, CalendarClock, Timer } from "lucide-react";
 
 /* ─── GOOGLE FONTS ──────────────────────────────────────────────────────── */
 const fontLink = document.createElement("link");
@@ -1222,11 +1222,11 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
         {/* STEP 4: Recordatorios */}
         {step === 4 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ color: '#0f172a', fontSize: 18, fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
-              🔔 Recordatorios Automáticos
+            <div style={{ color: '#0f172a', fontSize: 18, fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Bell size={20} color="#4f46e5" /> Recordatorios Automáticos
             </div>
             <p style={{ color: '#64748b', fontSize: 13, margin: 0, background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-              Configura los mensajes que se enviarán automáticamente por WhatsApp a cada lead en momentos clave.
+              Configura los mensajes automáticos de WhatsApp que recibirá el cliente a lo largo de su proceso.
             </p>
 
             {/* Recordatorio 1 */}
@@ -1235,8 +1235,8 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#10b981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>1</div>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>⏱ Al registrarse</div>
-                    <div style={{ color: '#64748b', fontSize: 12 }}>Se envía 5 minutos después del registro</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={16} /> Al captar el lead</div>
+                    <div style={{ color: '#64748b', fontSize: 12 }}>Se envía 5 minutos después del registro.</div>
                   </div>
                 </div>
                 <button onClick={() => updateReminder('r1_enabled', !reminders.r1_enabled)} style={{ background: reminders.r1_enabled ? '#dcfce7' : '#f1f5f9', border: 'none', borderRadius: 20, padding: '4px 14px', cursor: 'pointer', color: reminders.r1_enabled ? '#16a34a' : '#94a3b8', fontWeight: 600, fontSize: 12 }}>
@@ -1245,7 +1245,7 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
               </div>
               {reminders.r1_enabled && (
                 <div style={{ padding: '16px 20px' }}>
-                  <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Mensaje de bienvenida</label>
+                  <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Mensaje inicial</label>
                   <textarea
                     style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 14px', color: '#0f172a', fontSize: 14, resize: 'vertical', minHeight: 80, fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
                     value={reminders.r1_text}
@@ -1261,8 +1261,8 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>2</div>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>📅 24 horas antes de la cita</div>
-                    <div style={{ color: '#64748b', fontSize: 12 }}>Recordatorio anticipado</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CalendarClock size={16} /> 24 horas antes de la cita</div>
+                    <div style={{ color: '#64748b', fontSize: 12 }}>Confirmación anticipada.</div>
                   </div>
                 </div>
                 <button onClick={() => updateReminder('r2_enabled', !reminders.r2_enabled)} style={{ background: reminders.r2_enabled ? '#dcfce7' : '#f1f5f9', border: 'none', borderRadius: 20, padding: '4px 14px', cursor: 'pointer', color: reminders.r2_enabled ? '#16a34a' : '#94a3b8', fontWeight: 600, fontSize: 12 }}>
@@ -1271,7 +1271,7 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
               </div>
               {reminders.r2_enabled && (
                 <div style={{ padding: '16px 20px' }}>
-                  <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Mensaje de recordatorio (24h antes)</label>
+                  <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Mensaje de recordatorio</label>
                   <textarea
                     style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 14px', color: '#0f172a', fontSize: 14, resize: 'vertical', minHeight: 80, fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
                     value={reminders.r2_text}
@@ -1287,26 +1287,26 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>3</div>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>⏰ 3 horas antes — Confirmación con botones</div>
-                    <div style={{ color: '#64748b', fontSize: 12 }}>Plantilla interactiva: ¿Asistirás a la sesión? + botón reagendar</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={16} /> 3 horas antes (Confirmación)</div>
+                    <div style={{ color: '#64748b', fontSize: 12 }}>Permite confirmar asistencia o reagendar mediante botones interactivos.</div>
                   </div>
                 </div>
-                <span style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 20, padding: '4px 12px', color: '#92400e', fontWeight: 600, fontSize: 11 }}>Plantilla fija</span>
+                <span style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 20, padding: '4px 12px', color: '#92400e', fontWeight: 600, fontSize: 11 }}>Plantilla estructurada</span>
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: 16 }}>
-                  <div style={{ color: '#64748b', fontSize: 12, marginBottom: 8, fontWeight: 600 }}>📱 VISTA PREVIA DEL MENSAJE</div>
-                  <div style={{ color: '#0f172a', fontSize: 14 }}>¿Asistirás a la sesión de hoy?</div>
+                  <div style={{ color: '#64748b', fontSize: 12, marginBottom: 8, fontWeight: 600 }}>VISTA PREVIA DE PLANTILLA</div>
+                  <div style={{ color: '#0f172a', fontSize: 14 }}>¿Asistirás a la sesión programada para hoy?</div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <div style={{ flex: 1, background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px', textAlign: 'center', color: '#16a34a', fontWeight: 600, fontSize: 13 }}>✅ Sí, allá estaré</div>
-                    <div style={{ flex: 1, background: '#fee2e2', border: '1px solid #fecdd3', borderRadius: 6, padding: '8px', textAlign: 'center', color: '#dc2626', fontWeight: 600, fontSize: 13 }}>🔄 No, reagendar</div>
+                    <div style={{ flex: 1, background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px', textAlign: 'center', color: '#16a34a', fontWeight: 600, fontSize: 13 }}>Sí, asistiré</div>
+                    <div style={{ flex: 1, background: '#fee2e2', border: '1px solid #fecdd3', borderRadius: 6, padding: '8px', textAlign: 'center', color: '#dc2626', fontWeight: 600, fontSize: 13 }}>No, deseo reagendar</div>
                   </div>
                 </div>
                 <div>
-                  <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>URL de reagendamiento (Botón “No, reagendar”)</label>
+                  <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>URL para el botón de reagendamiento</label>
                   <input
                     style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 14px', color: '#0f172a', fontSize: 14, boxSizing: 'border-box', fontFamily: "'DM Sans',sans-serif" }}
-                    placeholder="https://calendly.com/tu-enlace"
+                    placeholder="https://..."
                     value={reminders.r3_url}
                     onChange={e => updateReminder('r3_url', e.target.value)}
                   />
@@ -1320,8 +1320,8 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#DB2C52,#C02245)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>4</div>
                   <div>
-                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>🔴 5 minutos antes</div>
-                    <div style={{ color: '#64748b', fontSize: 12 }}>Último aviso antes de la sesión</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><Timer size={16} /> 5 minutos antes</div>
+                    <div style={{ color: '#64748b', fontSize: 12 }}>Aviso final para acceder a la cita.</div>
                   </div>
                 </div>
                 <button onClick={() => updateReminder('r4_enabled', !reminders.r4_enabled)} style={{ background: reminders.r4_enabled ? '#dcfce7' : '#f1f5f9', border: 'none', borderRadius: 20, padding: '4px 14px', cursor: 'pointer', color: reminders.r4_enabled ? '#16a34a' : '#94a3b8', fontWeight: 600, fontSize: 12 }}>
@@ -1331,7 +1331,7 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
               {reminders.r4_enabled && (
                 <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
-                    <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Mensaje de último aviso</label>
+                    <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>Mensaje de aviso final</label>
                     <textarea
                       style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 14px', color: '#0f172a', fontSize: 14, resize: 'vertical', minHeight: 70, fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
                       value={reminders.r4_text}
@@ -1339,10 +1339,11 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
                     />
                   </div>
                   <div>
-                    <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>URL de la sesión (link de videollamada)</label>
+                    <label style={{ color: '#475569', fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>URL de la cita (generada automáticamente)</label>
                     <input
-                      style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 14px', color: '#0f172a', fontSize: 14, boxSizing: 'border-box', fontFamily: "'DM Sans',sans-serif" }}
-                      placeholder="https://meet.google.com/..."
+                      style={{ width: '100%', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 14px', color: '#64748b', fontSize: 14, boxSizing: 'border-box', fontFamily: "'DM Sans',sans-serif" }}
+                      placeholder="La URL será asignada automáticamente por el sistema al agendar"
+                      disabled
                       value={reminders.r4_url}
                       onChange={e => updateReminder('r4_url', e.target.value)}
                     />
