@@ -689,10 +689,6 @@ function ClassicBuilderView({ projectId, clientId, onBack }) {
         },
         [gjsPluginForms]: {},
       },
-      blockManager: {
-        appendTo: '.gjs-pn-views-container',
-        blocks: []
-      },
       deviceManager: {
         devices: [
           { name: 'Desktop', width: '' },
@@ -1712,10 +1708,10 @@ export default function App() {
       <main
         style={{
           ...s.main,
-          ...(activeNav === "builder" && activeProjectId ? { padding: 0, overflow: "hidden" } : {}),
+          ...((activeNav === "builder" || activeNav === "classic-builder") && activeProjectId ? { padding: 0, overflow: "hidden" } : {}),
         }}
       >
-        {loadingProjects && activeNav !== "builder" ? (
+        {loadingProjects && activeNav !== "builder" && activeNav !== "classic-builder" ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#52525b", fontSize: 14 }}>
             Cargando proyectos...
           </div>
