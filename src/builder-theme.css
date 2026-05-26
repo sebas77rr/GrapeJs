@@ -1,0 +1,108 @@
+/* builder-theme.css - Premium Dark Theme for Classic GrapesJS */
+
+/* Reset some default GrapesJS backgrounds */
+.gjs-editor-cont {
+  background-color: #0f172a !important; /* slate-900 */
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Sidebar and panels */
+.gjs-pn-panel {
+  background-color: #1e293b !important; /* slate-800 */
+  border-color: #334155 !important; /* slate-700 */
+  color: #f1f5f9 !important;
+}
+
+/* Top bar specific panel */
+.gjs-pn-views-container {
+  background-color: #0f172a !important;
+  box-shadow: inset 1px 0 0 #334155 !important;
+}
+
+/* Blocks */
+.gjs-block {
+  background-color: #334155 !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  color: #e2e8f0 !important;
+  transition: all 0.2s ease !important;
+  padding: 12px 10px !important;
+}
+
+.gjs-block:hover {
+  background-color: #475569 !important;
+  border-color: #6366f1 !important; /* indigo-500 */
+  transform: translateY(-2px) !important;
+}
+
+.gjs-block-label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  margin-top: 6px !important;
+}
+
+/* Buttons and icons */
+.gjs-pn-btn {
+  color: #cbd5e1 !important;
+}
+
+.gjs-pn-btn:hover {
+  background-color: rgba(99, 102, 241, 0.1) !important;
+  color: #818cf8 !important; /* indigo-400 */
+}
+
+.gjs-pn-btn.gjs-pn-active {
+  background-color: #4f46e5 !important; /* indigo-600 */
+  color: #ffffff !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+
+/* Canvas wrapper */
+.gjs-cv-canvas {
+  background-color: #cbd5e1 !important; /* slate-300 to mimic paper/device background */
+}
+
+/* Selectors / Traits / Style Manager inputs */
+.gjs-sm-sector .gjs-sm-title, 
+.gjs-clm-tags .gjs-sm-title, 
+.gjs-trt-traits .gjs-sm-title {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-bottom: 1px solid #334155 !important;
+  font-weight: 600 !important;
+}
+
+.gjs-field {
+  background-color: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 6px !important;
+  color: #f1f5f9 !important;
+}
+
+.gjs-field-colorp {
+  border-radius: 4px !important;
+}
+
+.gjs-field input, .gjs-field select {
+  color: #f1f5f9 !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Device Manager / Viewport toggles */
+.gjs-pn-devices-c {
+  padding-left: 10px !important;
+}
+
+/* Scrollbar customization for GrapesJS panels */
+.gjs-pn-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.gjs-pn-panel::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.gjs-pn-panel::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 10px;
+}

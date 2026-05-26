@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import StudioEditor from "@grapesjs/studio-sdk/react";
 import "@grapesjs/studio-sdk/style";
+import grapesjs from "grapesjs";
+import "grapesjs/dist/css/grapes.min.css";
+import gjsPresetWebpage from "grapesjs-preset-webpage";
+import "./builder-theme.css";
 import { Play, Pause, ExternalLink, Users, Trash2, Link2, MonitorPlay, Palette, Lock, Home, LayoutDashboard, MousePointerClick, Settings, Edit3, ArrowLeft, CheckCircle2, ChevronRight, Check, BarChart3 } from "lucide-react";
 
 /* ─── GOOGLE FONTS ──────────────────────────────────────────────────────── */
@@ -183,9 +187,12 @@ function DashboardView({ client, projects, onNavigate }) {
                 <span style={{ flex: 2, color: "#52525b", fontSize: 13 }}>
                   {new Date(p.updated_at).toLocaleDateString("es-CO")}
                 </span>
-                <span style={{ flex: 1 }}>
-                  <button style={v.tableBtn} onClick={() => onNavigate("builder", p.id)}>
-                    Editar
+                <span style={{ flex: 1, display: "flex", gap: 6 }}>
+                  <button style={v.tableBtn} onClick={() => onNavigate("classic-builder", p.id)}>
+                    Editar Clásico
+                  </button>
+                  <button style={{...v.tableBtn, color: "#818cf8"}} onClick={() => onNavigate("builder", p.id)} title="Editor Pro (Requiere Licencia en Prod)">
+                    Pro
                   </button>
                 </span>
               </div>
@@ -259,12 +266,19 @@ function LandingsView({ client, projects, onNavigate, onDelete, onRefresh }) {
                 <div style={{ color: "#52525b", fontSize: 12, marginBottom: 16 }}>
                   Editada {new Date(p.updated_at).toLocaleDateString("es-CO")}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
-                    style={{ ...v.btnPrimary, fontSize: 12, padding: "6px 14px", flex: 1 }}
-                    onClick={() => onNavigate("builder", p.id)}
+                    style={{ ...v.btnPrimary, fontSize: 12, padding: "6px 14px", flex: 1, minWidth: "45%" }}
+                    onClick={() => onNavigate("classic-builder", p.id)}
                   >
-                    Editar
+                    Editar Clásico
+                  </button>
+                  <button
+                    style={{ ...v.btnGhost, fontSize: 12, padding: "6px 14px", color: "#818cf8", borderColor: "#818cf8", flex: 1, minWidth: "45%" }}
+                    onClick={() => onNavigate("builder", p.id)}
+                    title="Editor Pro (Requiere Licencia en Prod)"
+                  >
+                    Editor Pro
                   </button>
                   <button
                     style={{ ...v.btnPrimary, background: "#27272a", fontSize: 12, padding: "6px 14px", flex: 1 }}
@@ -620,6 +634,114 @@ function BuilderView({ projectId, clientId, onBack }) {
             });
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLASSIC BUILDER VIEW — GrapesJS Open Source
+═══════════════════════════════════════════════════════════════════════════ */
+function ClassicBuilderView({ projectId, clientId, onBack }) {
+  const [saveStatus, setSaveStatus] = useState("saved");
+  const [projectName, setProjectName] = useState("");
+  const editorRef = useRef(null);
+  const containerRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+
+  // Cargar info del proyecto primero
+  useEffect(() => {
+    if (projectId && clientId) {
+      api.getProject(projectId, clientId).then((data) => {
+        if (data.project) {
+          setProjectName(data.project.name);
+          initEditor(data.project.json_data);
+        }
+      });
+    }
+    return () => {
+      if (editorRef.current) {
+        editorRef.current.destroy();
+        editorRef.current = null;
+      }
+    };
+  }, [projectId, clientId]);
+
+  const initEditor = (initialData) => {
+    if (editorRef.current || !containerRef.current) return;
+
+    const editor = grapesjs.init({
+      container: containerRef.current,
+      fromElement: false,
+      height: '100%',
+      width: 'auto',
+      storageManager: false, // Manejo manual
+      plugins: [gjsPresetWebpage],
+      pluginsOpts: {
+        [gjsPresetWebpage]: { /* opciones */ }
+      },
+      projectData: initialData && Object.keys(initialData).length > 0 ? initialData : null,
+    });
+
+    editorRef.current = editor;
+    setLoading(false);
+
+    // Track cambios
+    editor.on("update", () => {
+      setSaveStatus("unsaved");
+    });
+  };
+
+  const saveStatusColor = saveStatus === "saved" ? "#4ade80" : saveStatus === "saving" ? "#facc15" : "#f87171";
+  const saveStatusText = saveStatus === "saved" ? "Guardado" : saveStatus === "saving" ? "Guardando..." : "Sin guardar";
+
+  const handleManualSave = async () => {
+    if (!editorRef.current) return;
+    setSaveStatus("saving");
+    try {
+      const projectData = editorRef.current.getProjectData();
+      const html = editorRef.current.getHtml();
+      const css = editorRef.current.getCss();
+      await api.saveProject(projectId, clientId, projectData, html, css);
+      setSaveStatus("saved");
+    } catch (e) {
+      console.error("Error saving classic project", e);
+      setSaveStatus("unsaved");
+    }
+  };
+
+  return (
+    <div style={b.root}>
+      {/* ── TOPBAR ── */}
+      <div style={b.topbar}>
+        <div style={b.topLeft}>
+          <button style={b.backBtn} onClick={onBack}>
+            ← Volver
+          </button>
+          <div style={{ height: 18, width: 1, background: "#1c1c22" }} />
+          <span style={{ color: "#71717a", fontSize: 13, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {projectName || "Cargando..."}
+          </span>
+        </div>
+        <div style={b.topRight}>
+          <button style={{...v.btnPrimary, background: "#4f46e5", padding: "6px 14px", fontSize: 13}} onClick={handleManualSave}>
+            💾 Guardar
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: saveStatusColor }} />
+            <span style={{ color: "#52525b", fontSize: 12 }}>{saveStatusText}</span>
+          </div>
+          <div style={{ height: 18, width: 1, background: "#1c1c22" }} />
+          <div style={{ color: "#52525b", fontSize: 11, padding: "4px 8px", background: "rgba(16, 185, 129, 0.1)", borderRadius: 5, color: "#10b981" }}>
+            GrapesJS Clásico Pro
+          </div>
+        </div>
+      </div>
+
+      {/* ── CLASSIC EDITOR ── */}
+      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+        {loading && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", zIndex: 10 }}>Cargando Editor Clásico...</div>}
+        <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
       </div>
     </div>
   );
@@ -1401,6 +1523,15 @@ export default function App() {
     if (activeNav === "builder" && activeProjectId) {
       return (
         <BuilderView
+          projectId={activeProjectId}
+          clientId={currentClientId}
+          onBack={() => { setActiveNav("landings"); loadProjects(); }}
+        />
+      );
+    }
+    if (activeNav === "classic-builder" && activeProjectId) {
+      return (
+        <ClassicBuilderView
           projectId={activeProjectId}
           clientId={currentClientId}
           onBack={() => { setActiveNav("landings"); loadProjects(); }}
