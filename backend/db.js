@@ -128,7 +128,6 @@ module.exports = {
   async publishFunnel(id) {
     const f = await this.getFunnel(id);
     if (!f) return null;
-    // Deactivate others
     await prisma.funnel.updateMany({
       where: { client_id: f.client_id, id: { not: Number(id) } },
       data: { status: 'draft' }
@@ -151,7 +150,6 @@ module.exports = {
       where: { id: Number(id), client_id: Number(clientId) }
     });
     if (!f) return;
-    // Delete associated leads first
     await prisma.lead.deleteMany({ where: { funnel_id: Number(id) } });
     return prisma.funnel.delete({ where: { id: Number(id) } });
   },

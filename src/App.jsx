@@ -30,7 +30,7 @@ styleEl.textContent = `
 `;
 document.head.appendChild(styleEl);
 
-/* ─── API CLIENT ─────────────────────────────────────────────────────────── */
+// Rutas de la API
 const API = import.meta.env.PROD ? "/api" : "http://localhost:3001/api";
 const BASE_URL = import.meta.env.PROD ? window.location.origin : "http://localhost:3001";
 
@@ -57,7 +57,7 @@ const api = {
       method: "DELETE",
     }).then((r) => r.json()),
   getTemplates: () => fetch(`${API}/templates`).then((r) => r.json()),
-  // ── FUNNELS API ────────────────────────────────────────
+  // API para Funnels
   getFunnels: (clientId) =>
     fetch(`${API}/funnels?client_id=${clientId}`).then((r) => r.json()),
   getFunnel: (id) =>
@@ -508,7 +508,7 @@ function BuilderView({ projectId, clientId, onBack }) {
           if (data.project && data.project.json_data) {
             return data.project.json_data;
           }
-          return {}; // Devuelve objeto vacío en lugar de undefined para evitar el crash del SDK
+          return {}; // Evitar que se caiga el editor si no hay data
         } catch (e) {
           console.error("Error loading project:", e);
           return {};
@@ -534,7 +534,7 @@ function BuilderView({ projectId, clientId, onBack }) {
 
           const cleanData = JSON.parse(cleanDataStr);
 
-          // Búsqueda profunda del editor real de GrapesJS
+          // Buscar la instancia del editor activo
           function findEditor(obj, depth = 0) {
             if (!obj || depth > 2) return null;
             if (typeof obj.getHtml === 'function') return obj;
@@ -554,7 +554,7 @@ function BuilderView({ projectId, clientId, onBack }) {
             try { css = realEditor.getCss(); } catch(e){}
           }
 
-          // FALLBACK DEFINITIVO: Extraer directamente del DOM (Iframe del Canvas)
+          // Extraer directamente del DOM si falla lo anterior
           if (!html || html.trim() === "") {
              try {
                 const iframe = document.querySelector('iframe.gjs-frame');
@@ -565,18 +565,13 @@ function BuilderView({ projectId, clientId, onBack }) {
                    styles.forEach(s => css += s.innerHTML + "\\n");
                 }
              } catch (e) {
-                console.error("Fallo extracción del iframe", e);
+                console.error("Iframe extraction failed", e);
              }
           }
 
-          // Si el JSON contiene la info, guardarla cruda para debug
+          // Último recurso por si viene vacio
           if (!html || html.trim() === "") {
-             html = "<!-- Error crítico: HTML vacío. Revisa la consola -->";
-          }
-
-          // Si falla todo, envía un fallback para no mostrar el diseño roto
-          if (!html || html.trim() === "") {
-             html = "<!-- Editor vacío o error de exportación -->";
+             html = "<!-- Empty editor or export error -->";
           }
 
           await api.saveProject(projectIdRef.current, clientIdRef.current, cleanData, html, css);
@@ -1019,7 +1014,7 @@ function FunnelWizardView({ clientId, funnelId, onBack }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload = { ...form, form_fields: JSON.stringify(form.form_fields) };
+      const payload = { ...form, form_fields: JSON.stringify(form.form_fields), reminders_config: JSON.stringify(reminders) };
       let result;
       if (funnelId) {
         result = await api.updateFunnel(funnelId, payload);

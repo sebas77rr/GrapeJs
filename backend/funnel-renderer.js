@@ -1,24 +1,11 @@
-/**
- * funnel-renderer.js — Generador de HTML para Video Funnels
- * Exporta dos funciones: renderFunnelLanding y renderFunnelForm
- * Genera páginas auto-contenidas con diseño premium y tracking de video.
- */
 
-// ── RENDERIZAR LANDING DE VIDEO ────────────────────────────────────────────
-/**
- * Genera la página de aterrizaje del funnel con:
- * - Reproductor de video (YouTube / Vimeo / MP4)
- * - Barra de progreso animada
- * - Botón CTA bloqueado hasta alcanzar el umbral de visualización
- * - Anti-trampas: rastrea segmentos realmente vistos
- * - Diseño oscuro con glassmorphism, gradientes y micro-animaciones
- */
+// Genera el HTML de la landing del video
 function renderFunnelLanding(funnel) {
   const threshold = funnel.video_threshold || 90;
   const ctaText = funnel.cta_text || "¡Quiero acceder!";
   const formUrl = `/f/${funnel.public_slug}/form`;
 
-  // ── Bloque del reproductor según tipo ──
+  // Prepara el iframe según el origen del video
   let playerHTML = "";
   let playerJS = "";
 
@@ -27,7 +14,7 @@ function renderFunnelLanding(funnel) {
   else if (funnel.video_url.match(/vimeo\.com/i)) vType = 'vimeo';
 
   if (vType === "youtube") {
-    // Extraer ID del video de YouTube
+    // Sacar ID de Youtube
     playerHTML = `
       <div class="video-wrapper">
         <div id="yt-player"></div>
@@ -67,7 +54,7 @@ function renderFunnelLanding(funnel) {
         });
       }`;
   } else if (funnel.video_type === "vimeo") {
-    // Extraer ID del video de Vimeo
+    // Sacar ID de Vimeo
     playerHTML = `
       <div class="video-wrapper">
         <iframe id="vimeo-player" src="https://player.vimeo.com/video/${funnel.video_url.match(/vimeo\.com\/(\d+)/)?.[1] || funnel.video_url}"
@@ -89,7 +76,7 @@ function renderFunnelLanding(funnel) {
       };
       document.head.appendChild(vScript);`;
   } else {
-    // MP4 nativo
+    // Video MP4 directo
     playerHTML = `
       <div class="video-wrapper">
         <video id="mp4-player" preload="metadata" playsinline controls>
@@ -114,8 +101,8 @@ function renderFunnelLanding(funnel) {
   <title>${escapeHtml(funnel.title)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    /* ── Reset y base ── */
+    <style>
+    /* --- Base & Reset --- */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
@@ -126,7 +113,7 @@ function renderFunnelLanding(funnel) {
       overflow-x: hidden;
     }
 
-    /* ── Partículas de fondo decorativas / Overlay ── */
+    /* --- Background Overlay / Particles --- */
     body::before {
       content: '';
       position: fixed; top: 0; left: 0;
@@ -145,7 +132,7 @@ function renderFunnelLanding(funnel) {
       z-index: 0;
     }
 
-    /* ── Contenedor principal ── */
+    /* --- Main Container --- */
     .funnel-container {
       position: relative;
       z-index: 1;
@@ -159,7 +146,7 @@ function renderFunnelLanding(funnel) {
       justify-content: center;
     }
 
-    /* ── Título ── */
+    /* --- Title --- */
     .funnel-title {
       font-size: clamp(2rem, 5.5vw, 3.4rem);
       font-weight: 900;
@@ -174,7 +161,7 @@ function renderFunnelLanding(funnel) {
       animation: titleIn 0.8s ease-out;
     }
 
-    /* ── Subtítulo / Highlight ── */
+    /* --- Subtitle / Highlight --- */
     .funnel-highlight {
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       text-align: center;
@@ -189,7 +176,7 @@ function renderFunnelLanding(funnel) {
       animation: fadeUp 1s ease-out 0.2s both;
     }
 
-    /* ── Card glassmorphism del video ── */
+    /* --- Video Glassmorphism Card --- */
     .video-card {
       width: 100%;
       background: rgba(255,255,255,0.04);
@@ -222,7 +209,7 @@ function renderFunnelLanding(funnel) {
       border-radius: 12px;
     }
 
-    /* ── Barra de progreso ── */
+    /* --- Progress Bar --- */
     .progress-container {
       width: 100%;
       margin-top: 16px;
@@ -262,7 +249,7 @@ function renderFunnelLanding(funnel) {
       font-variant-numeric: tabular-nums;
     }
 
-    /* ── Botón CTA ── */
+    /* --- CTA Button --- */
     .cta-area {
       width: 100%;
       margin-top: 32px;
@@ -289,7 +276,7 @@ function renderFunnelLanding(funnel) {
       overflow: hidden;
       letter-spacing: 0.01em;
 
-      /* Estado bloqueado */
+      /* Bloqueado */
       background: rgba(255,255,255,0.06);
       color: rgba(255,255,255,0.35);
       border: 1px solid rgba(255,255,255,0.08);
@@ -325,7 +312,7 @@ function renderFunnelLanding(funnel) {
       opacity: 0.4;
     }
 
-    /* ── Badge Powered By ── */
+    /* --- Powered By Badge --- */
     .powered-badge {
       position: fixed;
       bottom: 20px;
@@ -347,7 +334,7 @@ function renderFunnelLanding(funnel) {
     }
     .powered-badge:hover { color: rgba(255,255,255,0.8); }
 
-    /* ── Animaciones ── */
+    /* --- Animations --- */
     @keyframes titleIn {
       from { opacity: 0; transform: translateY(-20px) scale(0.96); }
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -370,7 +357,7 @@ function renderFunnelLanding(funnel) {
       50% { box-shadow: 0 10px 50px rgba(16,185,129,0.5), 0 0 80px rgba(16,185,129,0.25); }
     }
 
-    /* ── Tema Light (Sobrescrituras) ── */
+    /* --- Light Theme (Overrides) --- */
     body.theme-light { background: #f8fafc; color: #0f172a; }
     body.theme-light::before { display: none; }
     body.theme-light .funnel-title { background: none; -webkit-text-fill-color: #0f172a; }
@@ -383,7 +370,7 @@ function renderFunnelLanding(funnel) {
     body.theme-light .cta-btn.unlocked::before { display: none; }
     body.theme-light .powered-badge { background: #fff; color: #64748b; border-color: #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
-    /* ── Responsivo ── */
+    /* --- Responsive --- */
     @media (max-width: 640px) {
       .funnel-container { padding: 24px 16px 48px; }
       .video-card { padding: 10px; border-radius: 14px; }
@@ -421,22 +408,22 @@ function renderFunnelLanding(funnel) {
 
   <script>
     (function() {
-      // ── Configuración ──  
+      // Variables iniciales  
       var THRESHOLD = ${threshold};
       var CTA_TEXT = ${JSON.stringify(ctaText)};
       var FORM_URL = ${JSON.stringify(formUrl)};
       var STORAGE_KEY = 'funnel_unlocked_${funnel.id}';
 
-      // ── Elementos DOM ──
+      // Nodos del DOM
       var progressFill = document.getElementById('progressFill');
       var progressText = document.getElementById('progressText');
       var ctaBtn = document.getElementById('ctaBtn');
       var ctaIcon = document.getElementById('ctaIcon');
       var ctaLabel = document.getElementById('ctaLabel');
 
-      // ── Anti-trampas: rastrear segmentos vistos ──
+      // Sistema anti trampas para obligar a ver el video
       var watchedSegments = new Set();
-      var totalSegments = 100; // Dividimos el video en 100 partes
+      var totalSegments = 100; // Dividimos en 100 chunks
 
       function trackSegment(currentTime, duration) {
         if (!duration || duration <= 0) return;
@@ -446,12 +433,12 @@ function renderFunnelLanding(funnel) {
         }
       }
 
-      // ── Calcular porcentaje real visto ──
+      // Calcular % total visto
       function getRealPercentage() {
         return Math.min(100, Math.round((watchedSegments.size / totalSegments) * 100));
       }
 
-      // ── Actualizar barra de progreso ──
+      // Actualiza la barrita
       function updateProgress(currentTime, duration) {
         if (!duration || duration <= 0) return;
         trackSegment(currentTime, duration);
@@ -459,7 +446,7 @@ function renderFunnelLanding(funnel) {
         progressFill.style.width = pct + '%';
         progressText.textContent = pct + '%';
 
-        // Cambiar color de la barra al acercarse al umbral
+        // Cambia de color cuando se va a desbloquear
         if (pct >= THRESHOLD) {
           progressFill.style.background = 'linear-gradient(90deg, #059669, #10b981, #34d399)';
           unlockCTA();
@@ -468,7 +455,7 @@ function renderFunnelLanding(funnel) {
         }
       }
 
-      // ── Desbloquear botón CTA ──
+      // Función para desbloquear el boton
       var isUnlocked = false;
       function unlockCTA() {
         if (isUnlocked) return;
@@ -478,11 +465,11 @@ function renderFunnelLanding(funnel) {
         ctaLabel.textContent = CTA_TEXT;
         ctaBtn.href = FORM_URL;
         ctaBtn.style.cursor = 'pointer';
-        // Guardar estado en sessionStorage
+        // Guarda estado para que no se bloquee al recargar
         try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
       }
 
-      // ── Restaurar estado si ya desbloqueó antes ──
+      // Restaurar si ya habia desbloqueado
       try {
         if (sessionStorage.getItem(STORAGE_KEY) === '1') {
           unlockCTA();
@@ -492,7 +479,7 @@ function renderFunnelLanding(funnel) {
         }
       } catch(e) {}
 
-      // ── Lógica del reproductor específico ──
+      // Lógica del iframe
       ${playerJS}
     })();
   </script>
@@ -500,18 +487,11 @@ function renderFunnelLanding(funnel) {
 </html>`;
 }
 
-// ── RENDERIZAR FORMULARIO ──────────────────────────────────────────────────
-/**
- * Genera la página del formulario del funnel con:
- * - Diseño glassmorphism premium
- * - Campos configurables según form_fields del funnel
- * - Envío por fetch con animación de confetti al éxito
- * - Validación de campos requeridos
- */
+// --- GENERADOR DEL FORMULARIO ---
 function renderFunnelForm(funnel) {
   let parsedFields = funnel.form_fields || [];
   if (typeof parsedFields === 'string') parsedFields = JSON.parse(parsedFields);
-  if (typeof parsedFields === 'string') parsedFields = JSON.parse(parsedFields); // Fallback double stringify
+  if (typeof parsedFields === 'string') parsedFields = JSON.parse(parsedFields); // Por si se guardó doble string
 
   const fieldsHTML = parsedFields.map((f) => {
     const required = f.required ? 'required' : '';
@@ -567,7 +547,7 @@ function renderFunnelForm(funnel) {
       overflow-x: hidden;
     }
 
-    /* Partículas decorativas / Overlay */
+    /* --- Background Overlay / Particles --- */
     body::before {
       content: '';
       position: fixed; top: 0; left: 0;
@@ -584,7 +564,7 @@ function renderFunnelForm(funnel) {
       z-index: 0;
     }
 
-    /* ── Card del formulario con glassmorphism ── */
+    /* --- Form Glassmorphism Card --- */
     .form-card {
       position: relative;
       z-index: 1;
@@ -603,7 +583,7 @@ function renderFunnelForm(funnel) {
       animation: cardIn 0.7s ease-out;
     }
 
-    /* ── Encabezado ── */
+    /* --- Header --- */
     .form-emoji {
       font-size: 3rem;
       text-align: center;
@@ -628,7 +608,7 @@ function renderFunnelForm(funnel) {
       font-weight: 500;
     }
 
-    /* ── Campos del formulario ── */
+    /* --- Form Fields --- */
     .form-group {
       margin-bottom: 20px;
     }
@@ -674,7 +654,7 @@ function renderFunnelForm(funnel) {
       min-height: 80px;
     }
 
-    /* ── Botón de envío ── */
+    /* --- Submit Button --- */
     .submit-btn {
       width: 100%;
       padding: 16px;
@@ -706,7 +686,7 @@ function renderFunnelForm(funnel) {
       transform: none;
     }
 
-    /* ── Estado de éxito ── */
+    /* --- Success State --- */
     .success-msg {
       display: none;
       text-align: center;
@@ -729,7 +709,7 @@ function renderFunnelForm(funnel) {
       font-size: 1rem;
     }
 
-    /* ── Error ── */
+    /* --- Error State --- */
     .error-msg {
       display: none;
       background: rgba(239,68,68,0.15);
@@ -743,7 +723,7 @@ function renderFunnelForm(funnel) {
     }
     .error-msg.show { display: block; }
 
-    /* ── Badge ── */
+    /* --- Powered By Badge --- */
     .powered-badge {
       position: fixed;
       bottom: 20px;
@@ -763,7 +743,7 @@ function renderFunnelForm(funnel) {
       z-index: 9999;
     }
 
-    /* ── Confetti ── */
+    /* --- Confetti --- */
     .confetti-piece {
       position: fixed;
       width: 10px;
@@ -774,7 +754,7 @@ function renderFunnelForm(funnel) {
       animation: confettiFall 3s ease-out forwards;
     }
 
-    /* ── Animaciones ── */
+    /* --- Animations --- */
     @keyframes cardIn {
       from { opacity: 0; transform: translateY(30px) scale(0.96); }
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -793,7 +773,7 @@ function renderFunnelForm(funnel) {
       100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
     }
 
-    /* ── Tema Light (Sobrescrituras) Formulario ── */
+    /* --- Light Theme (Overrides) --- */
     body.theme-light { background: #f8fafc; color: #0f172a; }
     body.theme-light::before { display: none; }
     body.theme-light .form-card { background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.05); }

@@ -7,21 +7,21 @@ const { renderFunnelLanding, renderFunnelForm } = require("./funnel-renderer");
 const app = express();
 const PORT = 3001;
 
-// ── MIDDLEWARE ──────────────────────────────────────────────────────────────
+// Middlewares básicos
 app.use(cors({ origin: /^http:\/\/localhost(:\d+)?$/ }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// ── ROUTES ─────────────────────────────────────────────────────────────────
+// Rutas
 app.use("/api/projects", require("./routes/projects"));
 app.use("/api/templates", require("./routes/templates"));
-app.use("/api/funnels", require("./routes/funnels"));   // CRUD de video funnels
-app.use("/api/funnels", require("./routes/leads"));     // Captura y consulta de leads
+app.use("/api/funnels", require("./routes/funnels"));
+app.use("/api/funnels", require("./routes/leads"));
 
-// ── SERVE STATIC FRONTEND (Vite /dist) ────────────────────────────────────
+// Servir frontend estático de React
 app.use(express.static(path.join(__dirname, "../dist")));
 
-// GET /api/clients  →  lista de clientes para el selector de la demo
+// Retorna clientes (solo demo)
 app.get("/api/clients", async (req, res) => {
   res.json(await db.getClients());
 });
@@ -31,7 +31,7 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
-// ── DOMINIOS TEMPORALES (PÚBLICOS) ─────────────────────────────────────────
+// Dominios y slugs públicos
 app.get("/p/:slug", async (req, res) => {
   const project = await db.getProjectBySlug(req.params.slug);
   if (!project) {
@@ -46,7 +46,7 @@ app.get("/p/:slug", async (req, res) => {
   const html = project.html || "<h1>Aún no hay contenido</h1>";
   const css = project.css || "";
 
-  // ¡SORPRESA PARA EL JEFE! Un badge inyectado dinámicamente
+  // Inserta el badge dinámicamente al final
   const badgeHtml = `
     <div style="position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 10px 15px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: bold; color: #333; z-index: 999999; display: flex; align-items: center; gap: 8px; border: 1px solid #eee;">
       <span style="font-size: 16px;">🚀</span> Powered by <strong>Nuestra Plataforma</strong>
@@ -68,9 +68,9 @@ app.get("/p/:slug", async (req, res) => {
 </html>`);
 });
 
-// ── VIDEO FUNNELS (PÚBLICOS) ───────────────────────────────────────────────
+// Rutas públicas de Funnels
 
-// Landing del funnel con video y CTA bloqueado
+// Vista del Funnel (video)
 app.get("/f/:slug", async (req, res) => {
   const funnel = await db.getFunnelBySlug(req.params.slug);
   if (!funnel) {
@@ -84,7 +84,7 @@ app.get("/f/:slug", async (req, res) => {
   res.send(renderFunnelLanding({ ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] }));
 });
 
-// Formulario del funnel (se muestra al desbloquear el CTA)
+// Formulario del lead (después del video)
 app.get("/f/:slug/form", async (req, res) => {
   const funnel = await db.getFunnelBySlug(req.params.slug);
   if (!funnel) {
@@ -98,12 +98,12 @@ app.get("/f/:slug/form", async (req, res) => {
   res.send(renderFunnelForm({ ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] }));
 });
 
-// ── CATCH-ALL PARA EL ROUTER DEL FRONTEND ─────────────────────────────────
+// Catch all para el router de React
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../dist/index.html"));
 });
 
-// ── START ───────────────────────────────────────────────────────────────────
+// Arrancar server
 app.listen(PORT, () => {
   console.log(`\n🚀 Backend corriendo en http://localhost:${PORT}`);
   console.log(`   Endpoints disponibles:`);
