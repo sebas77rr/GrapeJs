@@ -21,7 +21,7 @@ Servidor API REST, renderizado de Landing Pages públicas (`funnel-renderer.js`)
 
 ## Comandos de Ejecución
 ```bash
-npm install
+pnpm install
 npx prisma generate
-npm start
+pnpm start
 ```
