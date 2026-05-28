@@ -19,7 +19,7 @@ app.use("/api/funnels", require("./routes/funnels"));
 app.use("/api/funnels", require("./routes/leads"));
 
 // Servir frontend estático de React
-app.use(express.static(path.join(__dirname, "../dist")));
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
 // Retorna clientes (solo demo)
 app.get("/api/clients", async (req, res) => {
@@ -100,7 +100,7 @@ app.get("/f/:slug/form", async (req, res) => {
 
 // Catch all para el router de React
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 // Arrancar server
