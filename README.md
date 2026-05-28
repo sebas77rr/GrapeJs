@@ -3,13 +3,15 @@
 ## Tech Stack
 - Node.js
 - Express.js
-- File System nativo (`fs.promises`)
+- Prisma (ORM)
+- Supabase (PostgreSQL)
+- Despliegue: Render
 
 ## Responsabilidad Principal
 Servidor API REST, renderizado de Landing Pages públicas (`funnel-renderer.js`), despacho del frontend compilado y persistencia de datos (Leads, Configuración, Proyectos).
 
 ## Lógica Clave
-- **Persistencia Local (Zero Dependencies):** No utiliza bases de datos externas ni ORMs. Toda la información se gestiona de forma local y atómica en `demo-db.json` y `/storage`. Esto asegura portabilidad total e independencia de servicios cloud para los servidores de la empresa.
+- **Infraestructura (Demo):** La aplicación está conectada a **Supabase** (PostgreSQL) para la base de datos a través de Prisma, y desplegada en servicios cloud como **Render** para la demostración.
 - **Sistema Anti-Cheat (Video Funnels):** 
   Para evitar que los leads salten el video y revelen el formulario prematuramente:
   1. El sistema rastrea el video por fragmentos o "chunks" de 1%.
@@ -20,5 +22,6 @@ Servidor API REST, renderizado de Landing Pages públicas (`funnel-renderer.js`)
 ## Comandos de Ejecución
 ```bash
 npm install
-npm start  # Levanta la API y sirve el frontend estático en el puerto 3001
+npx prisma generate
+npm start
 ```
