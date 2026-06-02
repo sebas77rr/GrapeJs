@@ -1,11 +1,9 @@
-
 // Genera el HTML de la landing del video
 function renderFunnelLanding(funnel) {
   const threshold = funnel.video_threshold || 90;
   const ctaText = funnel.cta_text || "¡Quiero acceder!";
   const formUrl = `/f/${funnel.public_slug}/form`;
 
-  // Prepara el iframe según el origen del video
   let playerHTML = "";
   let playerJS = "";
 
@@ -14,17 +12,11 @@ function renderFunnelLanding(funnel) {
   else if (funnel.video_url.match(/vimeo\.com/i)) vType = 'vimeo';
 
   if (vType === "youtube") {
-    // Sacar ID de Youtube
-    playerHTML = `
-      <div class="video-wrapper">
-        <div id="yt-player"></div>
-      </div>`;
+    playerHTML = `<div class="video-wrapper"><div id="yt-player"></div></div>`;
     playerJS = `
-      // --- YouTube IFrame API ---
       var tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       document.head.appendChild(tag);
-
       var ytPlayer, ytDuration = 0, ytInterval;
       function extractYTId(url) {
         var m = url.match(/(?:youtu\\.be\\/|v=|embed\\/)([\\w-]{11})/);
@@ -36,33 +28,25 @@ function renderFunnelLanding(funnel) {
           videoId: extractYTId('${funnel.video_url}'),
           playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
           events: {
-            onReady: function(e) {
-              ytDuration = e.target.getDuration();
-            },
+            onReady: function(e) { ytDuration = e.target.getDuration(); },
             onStateChange: function(e) {
               if (e.data === YT.PlayerState.PLAYING) {
                 ytInterval = setInterval(function() {
                   var t = ytPlayer.getCurrentTime();
-                  trackSegment(t);
+                  trackSegment(t, ytDuration);
                   updateProgress(t, ytDuration);
                 }, 500);
-              } else {
-                clearInterval(ytInterval);
-              }
+              } else { clearInterval(ytInterval); }
             }
           }
         });
       }`;
-  } else if (funnel.video_type === "vimeo") {
-    // Sacar ID de Vimeo
-    playerHTML = `
-      <div class="video-wrapper">
+  } else if (vType === "vimeo") {
+    playerHTML = `<div class="video-wrapper">
         <iframe id="vimeo-player" src="https://player.vimeo.com/video/${funnel.video_url.match(/vimeo\.com\/(\d+)/)?.[1] || funnel.video_url}"
-                frameborder="0" allow="autoplay; fullscreen" allowfullscreen
-                style="width:100%;height:100%;position:absolute;top:0;left:0;"></iframe>
+                frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;position:absolute;top:0;left:0;"></iframe>
       </div>`;
     playerJS = `
-      // --- Vimeo Player API ---
       var vScript = document.createElement('script');
       vScript.src = 'https://player.vimeo.com/api/player.js';
       vScript.onload = function() {
@@ -70,25 +54,21 @@ function renderFunnelLanding(funnel) {
         var vDuration = 0;
         vPlayer.getDuration().then(function(d) { vDuration = d; });
         vPlayer.on('timeupdate', function(data) {
-          trackSegment(data.seconds);
+          trackSegment(data.seconds, vDuration);
           updateProgress(data.seconds, vDuration);
         });
       };
       document.head.appendChild(vScript);`;
   } else {
-    // Video MP4 directo
-    playerHTML = `
-      <div class="video-wrapper">
+    playerHTML = `<div class="video-wrapper">
         <video id="mp4-player" preload="metadata" playsinline controls>
           <source src="${funnel.video_url}" type="video/mp4">
-          Tu navegador no soporta video HTML5.
         </video>
       </div>`;
     playerJS = `
-      // --- HTML5 Video ---
       var vid = document.getElementById('mp4-player');
       vid.addEventListener('timeupdate', function() {
-        trackSegment(vid.currentTime);
+        trackSegment(vid.currentTime, vid.duration || 1);
         updateProgress(vid.currentTime, vid.duration || 1);
       });`;
   }
@@ -100,362 +80,182 @@ function renderFunnelLanding(funnel) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(funnel.title)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-    /* --- Base & Reset --- */
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: ${funnel.cta_color || '#6366f1'};
+      --accent2: #a78bfa;
+      --glass: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.09);
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      ${funnel.bg_image ? `background: url('${funnel.bg_image}') no-repeat center center fixed; background-size: cover;` : (funnel.bg_color ? `background: ${funnel.bg_color};` : `background: linear-gradient(165deg, #0a0a1a 0%, #0d0d2b 30%, #1a1a2e 60%, #16213e 100%);`)}
+      font-family: 'DM Sans', sans-serif;
+      ${funnel.bg_image
+        ? `background: url('${funnel.bg_image}') no-repeat center center fixed; background-size: cover;`
+        : funnel.bg_color
+          ? `background: ${funnel.bg_color};`
+          : `background: radial-gradient(ellipse at 20% 50%, #0f0c29 0%, #302b63 50%, #24243e 100%);`}
       min-height: 100vh;
-      color: ${funnel.bg_image || funnel.bg_color || funnel.theme === 'dark' ? '#fff' : '#1e293b'};
+      color: #fff;
       overflow-x: hidden;
     }
-
-    /* --- Background Overlay / Particles --- */
     body::before {
       content: '';
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      ${funnel.bg_image ? 
-        `background: rgba(0,0,0,0.6);` : 
-        `background:
-          radial-gradient(2px 2px at 20% 30%, rgba(139,92,246,0.3), transparent),
-          radial-gradient(2px 2px at 80% 20%, rgba(59,130,246,0.2), transparent),
-          radial-gradient(2px 2px at 40% 70%, rgba(236,72,153,0.15), transparent),
-          radial-gradient(3px 3px at 60% 80%, rgba(139,92,246,0.2), transparent),
-          radial-gradient(2px 2px at 10% 90%, rgba(59,130,246,0.15), transparent),
-          radial-gradient(2px 2px at 90% 60%, rgba(236,72,153,0.2), transparent);`
-      }
-      pointer-events: none;
-      z-index: 0;
+      position: fixed; inset: 0;
+      ${funnel.bg_image ? `background: rgba(0,0,0,0.55);` : `background: radial-gradient(2px 2px at 15% 25%, rgba(167,139,250,0.25), transparent), radial-gradient(2px 2px at 75% 15%, rgba(99,102,241,0.2), transparent), radial-gradient(2px 2px at 45% 75%, rgba(236,72,153,0.12), transparent);`}
+      pointer-events: none; z-index: 0;
     }
-
-    /* --- Main Container --- */
-    .funnel-container {
-      position: relative;
-      z-index: 1;
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 40px 20px 60px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      justify-content: center;
+    .container {
+      position: relative; z-index: 1;
+      max-width: 780px; margin: 0 auto;
+      padding: 48px 20px 72px;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; justify-content: center; gap: 0;
     }
-
-    /* --- Title --- */
-    .funnel-title {
-      font-size: clamp(2rem, 5.5vw, 3.4rem);
-      font-weight: 900;
-      text-align: center;
-      line-height: 1.15;
-      margin-bottom: 14px;
-      letter-spacing: -0.02em;
-      background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 50%, #c4b5fd 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: titleIn 0.8s ease-out;
+    .eyebrow {
+      font-family: 'Sora', sans-serif;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 16px;
+      opacity: 0; animation: fadeUp 0.6s ease-out 0.1s forwards;
     }
-
-    /* --- Subtitle / Highlight --- */
-    .funnel-highlight {
-      font-size: clamp(1rem, 2.5vw, 1.25rem);
-      text-align: center;
-      margin-bottom: 36px;
-      max-width: 600px;
-      line-height: 1.6;
-      font-weight: 500;
-      background: linear-gradient(90deg, #a78bfa, #818cf8, #6366f1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: fadeUp 1s ease-out 0.2s both;
+    .title {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(2rem, 5.5vw, 3.2rem);
+      font-weight: 800; text-align: center; line-height: 1.12;
+      margin-bottom: 16px; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 0%, #e0e7ff 45%, #c4b5fd 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      opacity: 0; animation: fadeUp 0.7s ease-out 0.2s forwards;
     }
-
-    /* --- Video Glassmorphism Card --- */
+    .highlight {
+      font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+      text-align: center; margin-bottom: 40px; max-width: 580px;
+      line-height: 1.65; font-weight: 500; color: rgba(255,255,255,0.6);
+      opacity: 0; animation: fadeUp 0.8s ease-out 0.3s forwards;
+    }
     .video-card {
       width: 100%;
-      background: rgba(255,255,255,0.04);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow:
-        0 25px 50px rgba(0,0,0,0.4),
-        0 0 80px rgba(139,92,246,0.08),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-      animation: fadeUp 0.8s ease-out 0.3s both;
+      background: var(--glass);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border); border-radius: 24px; padding: 14px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03);
+      opacity: 0; animation: fadeUp 0.9s ease-out 0.4s forwards;
     }
-
     .video-wrapper {
-      position: relative;
-      width: 100%;
-      padding-bottom: 56.25%; /* 16:9 */
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
+      position: relative; width: 100%; padding-bottom: 56.25%;
+      border-radius: 14px; overflow: hidden; background: #000;
     }
-    .video-wrapper iframe,
-    .video-wrapper video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: none;
-      border-radius: 12px;
+    .video-wrapper iframe, .video-wrapper video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      border: none; border-radius: 14px;
     }
-
-    /* --- Progress Bar --- */
-    .progress-container {
-      width: 100%;
-      margin-top: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .progress-row {
+      display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 0 4px;
     }
-    .progress-bar-bg {
-      flex: 1;
-      height: 6px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 10px;
-      overflow: hidden;
-      position: relative;
+    .progress-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; white-space: nowrap; }
+    .progress-track {
+      flex: 1; height: 5px; background: rgba(255,255,255,0.07);
+      border-radius: 10px; overflow: hidden;
     }
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 10px;
-      background: linear-gradient(90deg, #7c3aed, #8b5cf6, #a78bfa);
+    .progress-fill {
+      height: 100%; width: 0%; border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
       transition: width 0.4s ease;
-      position: relative;
     }
-    .progress-bar-fill::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      animation: shimmer 2s infinite;
-    }
-    .progress-text {
-      font-size: 13px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.5);
-      min-width: 42px;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* --- CTA Button --- */
-    .cta-area {
-      width: 100%;
-      margin-top: 32px;
-      display: flex;
-      justify-content: center;
-      animation: fadeUp 1s ease-out 0.5s both;
-    }
-
+    .progress-pct { font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.45); min-width: 36px; text-align: right; }
+    .cta-wrap { width: 100%; margin-top: 36px; display: flex; justify-content: center; opacity: 0; animation: fadeUp 1s ease-out 0.55s forwards; }
     .cta-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 18px 48px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      font-family: 'Inter', sans-serif;
-      border: none;
-      border-radius: 16px;
-      cursor: not-allowed;
-      text-decoration: none;
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-      letter-spacing: 0.01em;
-
-      /* Bloqueado */
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.35);
-      border: 1px solid rgba(255,255,255,0.08);
+      display: inline-flex; align-items: center; gap: 12px;
+      padding: 18px 52px; font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 100px;
+      background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3);
+      cursor: not-allowed; text-decoration: none; transition: all 0.5s ease; letter-spacing: 0.01em;
     }
-
     .cta-btn.unlocked {
-      display: inline-flex;
-      background: ${funnel.cta_color || '#6366f1'};
-      color: #fff;
-      border-color: transparent;
-      box-shadow:
-        0 10px 40px rgba(16,185,129,0.35),
-        0 0 60px rgba(16,185,129,0.15),
-        inset 0 1px 0 rgba(255,255,255,0.2);
-      transform: scale(1);
-      animation: unlockPulse 0.6s ease-out, ctaGlow 3s ease-in-out infinite 0.6s;
+      background: var(--accent); color: #fff; border-color: transparent; cursor: pointer;
+      box-shadow: 0 8px 40px rgba(99,102,241,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+      animation: unlockPop 0.5s ease-out, pulse 3s ease-in-out infinite 0.5s;
     }
-    .cta-btn.unlocked:hover {
-      transform: scale(1.04) translateY(-2px);
-      box-shadow:
-        0 16px 50px rgba(16,185,129,0.45),
-        0 0 80px rgba(16,185,129,0.2),
-        inset 0 1px 0 rgba(255,255,255,0.2);
+    .cta-btn.unlocked:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 14px 50px rgba(99,102,241,0.55); }
+    .badge {
+      position: fixed; bottom: 20px; right: 20px;
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(12px);
+      padding: 7px 15px; border-radius: 100px; font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 6px; z-index: 9999;
     }
-    .cta-btn.unlocked::before {
-      content: '';
-      position: absolute;
-      top: -2px; left: -2px; right: -2px; bottom: -2px;
-      background: linear-gradient(135deg, #059669, #10b981, #34d399, #6ee7b7);
-      border-radius: 18px;
-      z-index: -1;
-      filter: blur(12px);
-      opacity: 0.4;
-    }
-
-    /* --- Powered By Badge --- */
-    .powered-badge {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(255,255,255,0.07);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 8px 16px;
-      border-radius: 50px;
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.5);
-      border: 1px solid rgba(255,255,255,0.08);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      z-index: 9999;
-      transition: opacity 0.3s;
-    }
-    .powered-badge:hover { color: rgba(255,255,255,0.8); }
-
-    /* --- Animations --- */
-    @keyframes titleIn {
-      from { opacity: 0; transform: translateY(-20px) scale(0.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(200%); }
-    }
-    @keyframes unlockPulse {
-      0% { transform: scale(0.92); opacity: 0.7; }
-      50% { transform: scale(1.06); }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    @keyframes ctaGlow {
-      0%, 100% { box-shadow: 0 10px 40px rgba(16,185,129,0.35), 0 0 60px rgba(16,185,129,0.15); }
-      50% { box-shadow: 0 10px 50px rgba(16,185,129,0.5), 0 0 80px rgba(16,185,129,0.25); }
-    }
-
-    /* --- Light Theme (Overrides) --- */
-    body.theme-light { background: #f8fafc; color: #0f172a; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes unlockPop { 0% { transform: scale(0.9); opacity: 0.6; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes pulse { 0%,100% { box-shadow: 0 8px 40px rgba(99,102,241,0.4); } 50% { box-shadow: 0 8px 55px rgba(99,102,241,0.6); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    body.theme-light { background: #f1f5f9; color: #0f172a; }
     body.theme-light::before { display: none; }
-    body.theme-light .funnel-title { background: none; -webkit-text-fill-color: #0f172a; }
-    body.theme-light .funnel-highlight { background: none; -webkit-text-fill-color: #475569; }
-    body.theme-light .video-card { background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.05); }
-    body.theme-light .progress-bar-bg { background: #e2e8f0; }
-    body.theme-light .progress-text { color: #64748b; }
+    body.theme-light .title { background: none; -webkit-text-fill-color: #0f172a; }
+    body.theme-light .highlight { color: #64748b; }
+    body.theme-light .video-card { background: #fff; border-color: #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
+    body.theme-light .progress-track { background: #e2e8f0; }
     body.theme-light .cta-btn { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
-    body.theme-light .cta-btn.unlocked { background: linear-gradient(135deg, #059669, #10b981); color: #fff; box-shadow: 0 10px 25px rgba(16,185,129,0.2); border-color: transparent; }
-    body.theme-light .cta-btn.unlocked::before { display: none; }
-    body.theme-light .powered-badge { background: #fff; color: #64748b; border-color: #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-
-    /* --- Responsive --- */
-    @media (max-width: 640px) {
-      .funnel-container { padding: 24px 16px 48px; }
-      .video-card { padding: 10px; border-radius: 14px; }
-      .cta-btn { padding: 16px 32px; font-size: 1rem; width: 100%; }
-      .powered-badge { bottom: 12px; right: 12px; font-size: 11px; }
+    body.theme-light .badge { background: #fff; color: #94a3b8; border-color: #e2e8f0; }
+    @media (max-width: 600px) {
+      .container { padding: 32px 16px 56px; }
+      .video-card { padding: 10px; border-radius: 18px; }
+      .cta-btn { padding: 16px 32px; font-size: 0.95rem; width: 100%; justify-content: center; border-radius: 16px; }
     }
   </style>
 </head>
 <body class="theme-${funnel.theme || 'dark'}">
-  <div class="funnel-container">
-    <h1 class="funnel-title">${escapeHtml(funnel.title)}</h1>
-    ${funnel.highlight_text ? `<p class="funnel-highlight">${escapeHtml(funnel.highlight_text)}</p>` : ""}
-
+  <div class="container">
+    <div class="eyebrow">✦ Contenido exclusivo</div>
+    <h1 class="title">${escapeHtml(funnel.title)}</h1>
+    ${funnel.highlight_text ? `<p class="highlight">${escapeHtml(funnel.highlight_text)}</p>` : ""}
     <div class="video-card">
       ${playerHTML}
-      <div class="progress-container">
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="progressFill"></div>
-        </div>
-        <span class="progress-text" id="progressText">0%</span>
+      <div class="progress-row">
+        <span class="progress-label">PROGRESO</span>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-pct" id="progressText">0%</span>
       </div>
     </div>
-
-    <div class="cta-area">
+    <div class="cta-wrap">
       <a id="ctaBtn" class="cta-btn" href="javascript:void(0)">
         <span id="ctaIcon">🔒</span>
-        <span id="ctaLabel" style="font-size: 0.9em; font-weight: 500;">${funnel.locked_btn_text || 'Ver el video para desbloquear el beneficio'}</span>
+        <span id="ctaLabel">${funnel.locked_btn_text || 'Ve el video para desbloquear'}</span>
       </a>
     </div>
   </div>
-
-  <div class="powered-badge">
-    <span>🚀</span> Powered by <strong>Nuestra Plataforma</strong>
-  </div>
-
+  <div class="badge">⚡ Powered by KiuFlow</div>
   <script>
     (function() {
-      // Variables iniciales  
       var THRESHOLD = ${threshold};
       var CTA_TEXT = ${JSON.stringify(ctaText)};
       var FORM_URL = ${JSON.stringify(formUrl)};
       var STORAGE_KEY = 'funnel_unlocked_${funnel.id}';
-
-      // Nodos del DOM
       var progressFill = document.getElementById('progressFill');
       var progressText = document.getElementById('progressText');
       var ctaBtn = document.getElementById('ctaBtn');
       var ctaIcon = document.getElementById('ctaIcon');
       var ctaLabel = document.getElementById('ctaLabel');
-
-      // Sistema anti trampas para obligar a ver el video
       var watchedSegments = new Set();
-      var totalSegments = 100; // Dividimos en 100 chunks
-
+      var totalSegments = 100;
       function trackSegment(currentTime, duration) {
         if (!duration || duration <= 0) return;
-        var segment = Math.floor((currentTime / duration) * totalSegments);
-        if (segment >= 0 && segment < totalSegments) {
-          watchedSegments.add(segment);
-        }
+        var seg = Math.floor((currentTime / duration) * totalSegments);
+        if (seg >= 0 && seg < totalSegments) watchedSegments.add(seg);
       }
-
-      // Calcular % total visto
-      function getRealPercentage() {
-        return Math.min(100, Math.round((watchedSegments.size / totalSegments) * 100));
-      }
-
-      // Actualiza la barrita
+      function getRealPct() { return Math.min(100, Math.round((watchedSegments.size / totalSegments) * 100)); }
       function updateProgress(currentTime, duration) {
         if (!duration || duration <= 0) return;
         trackSegment(currentTime, duration);
-        var pct = getRealPercentage();
+        var pct = getRealPct();
         progressFill.style.width = pct + '%';
         progressText.textContent = pct + '%';
-
-        // Cambia de color cuando se va a desbloquear
-        if (pct >= THRESHOLD) {
-          progressFill.style.background = 'linear-gradient(90deg, #059669, #10b981, #34d399)';
-          unlockCTA();
-        } else if (pct >= THRESHOLD * 0.7) {
-          progressFill.style.background = 'linear-gradient(90deg, #7c3aed, #8b5cf6, #f59e0b)';
-        }
+        if (pct >= THRESHOLD) { progressFill.style.background = 'linear-gradient(90deg, #10b981, #34d399)'; unlockCTA(); }
+        else if (pct >= THRESHOLD * 0.7) { progressFill.style.background = 'linear-gradient(90deg, #6366f1, #f59e0b)'; }
       }
-
-      // Función para desbloquear el boton
       var isUnlocked = false;
       function unlockCTA() {
         if (isUnlocked) return;
@@ -465,21 +265,16 @@ function renderFunnelLanding(funnel) {
         ctaLabel.textContent = CTA_TEXT;
         ctaBtn.href = FORM_URL;
         ctaBtn.style.cursor = 'pointer';
-        // Guarda estado para que no se bloquee al recargar
         try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
       }
-
-      // Restaurar si ya habia desbloqueado
       try {
         if (sessionStorage.getItem(STORAGE_KEY) === '1') {
           unlockCTA();
           progressFill.style.width = '100%';
           progressText.textContent = '100%';
-          progressFill.style.background = 'linear-gradient(90deg, #059669, #10b981, #34d399)';
+          progressFill.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
         }
       } catch(e) {}
-
-      // Lógica del iframe
       ${playerJS}
     })();
   </script>
@@ -487,26 +282,22 @@ function renderFunnelLanding(funnel) {
 </html>`;
 }
 
-// --- GENERADOR DEL FORMULARIO ---
+// --- GENERADOR DEL FORMULARIO + CALENDARIO ---
 function renderFunnelForm(funnel) {
   let parsedFields = funnel.form_fields || [];
   if (typeof parsedFields === 'string') parsedFields = JSON.parse(parsedFields);
-  if (typeof parsedFields === 'string') parsedFields = JSON.parse(parsedFields); // Por si se guardó doble string
+  if (typeof parsedFields === 'string') parsedFields = JSON.parse(parsedFields);
 
   const fieldsHTML = parsedFields.map((f) => {
     const required = f.required ? 'required' : '';
     const requiredStar = f.required ? '<span class="req">*</span>' : '';
-
     if (f.type === "textarea") {
-      return `
-        <div class="form-group">
+      return `<div class="form-group">
           <label for="field_${f.name}">${escapeHtml(f.label)} ${requiredStar}</label>
-          <textarea id="field_${f.name}" name="${escapeHtml(f.name)}" rows="3"
-                    placeholder="${escapeHtml(f.label)}" ${required}></textarea>
+          <textarea id="field_${f.name}" name="${escapeHtml(f.name)}" rows="3" placeholder="${escapeHtml(f.label)}" ${required}></textarea>
         </div>`;
     } else if (f.type === "select") {
-      return `
-        <div class="form-group">
+      return `<div class="form-group">
           <label for="field_${f.name}">${escapeHtml(f.label)} ${requiredStar}</label>
           <select id="field_${f.name}" name="${escapeHtml(f.name)}" ${required}>
             <option value="">Selecciona una opción...</option>
@@ -516,11 +307,9 @@ function renderFunnelForm(funnel) {
           </select>
         </div>`;
     }
-    return `
-      <div class="form-group">
+    return `<div class="form-group">
         <label for="field_${f.name}">${escapeHtml(f.label)} ${requiredStar}</label>
-        <input type="${f.type || 'text'}" id="field_${f.name}" name="${escapeHtml(f.name)}"
-               placeholder="${escapeHtml(f.label)}" ${required} />
+        <input type="${f.type || 'text'}" id="field_${f.name}" name="${escapeHtml(f.name)}" placeholder="${escapeHtml(f.label)}" ${required} />
       </div>`;
   }).join("\n");
 
@@ -529,386 +318,605 @@ function renderFunnelForm(funnel) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(funnel.title)} — Formulario</title>
+  <title>${escapeHtml(funnel.title)} — Agenda tu cita</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --accent: ${funnel.cta_color || '#6366f1'};
+      --accent-light: rgba(99,102,241,0.15);
+      --accent-glow: rgba(99,102,241,0.35);
+      --bg: #0d0d1a;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.09);
+      --text: #fff;
+      --text-muted: rgba(255,255,255,0.5);
+      --radius: 16px;
+      --success: #10b981;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      ${funnel.bg_image ? `background: url('${funnel.bg_image}') no-repeat center center fixed; background-size: cover;` : (funnel.bg_color ? `background: ${funnel.bg_color};` : `background: linear-gradient(165deg, #0a0a1a 0%, #0d0d2b 30%, #1a1a2e 60%, #16213e 100%);`)}
-      min-height: 100vh;
-      color: ${funnel.bg_image || funnel.bg_color || funnel.theme === 'dark' ? '#fff' : '#1e293b'};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
-      overflow-x: hidden;
+      font-family: 'DM Sans', sans-serif;
+      ${funnel.bg_image
+        ? `background: url('${funnel.bg_image}') no-repeat center center fixed; background-size: cover;`
+        : funnel.bg_color
+          ? `background: ${funnel.bg_color};`
+          : `background: radial-gradient(ellipse at 20% 50%, #0f0c29 0%, #302b63 50%, #24243e 100%);`}
+      min-height: 100vh; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px; overflow-x: hidden;
     }
-
-    /* --- Background Overlay / Particles --- */
     body::before {
-      content: '';
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      ${funnel.bg_image ? 
-        `background: rgba(0,0,0,0.6);` : 
-        `background:
-          radial-gradient(2px 2px at 20% 30%, rgba(139,92,246,0.3), transparent),
-          radial-gradient(2px 2px at 80% 20%, rgba(59,130,246,0.2), transparent),
-          radial-gradient(2px 2px at 40% 70%, rgba(236,72,153,0.15), transparent),
-          radial-gradient(3px 3px at 60% 80%, rgba(139,92,246,0.2), transparent);`
-      }
-      pointer-events: none;
-      z-index: 0;
+      content: ''; position: fixed; inset: 0;
+      ${funnel.bg_image ? `background: rgba(0,0,0,0.6);` : `background: radial-gradient(2px 2px at 20% 30%, rgba(139,92,246,0.2), transparent), radial-gradient(2px 2px at 80% 70%, rgba(99,102,241,0.15), transparent);`}
+      pointer-events: none; z-index: 0;
     }
 
-    /* --- Form Glassmorphism Card --- */
-    .form-card {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 520px;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 24px;
-      padding: 48px 40px;
-      box-shadow:
-        0 30px 60px rgba(0,0,0,0.5),
-        0 0 100px rgba(139,92,246,0.06),
-        inset 0 1px 0 rgba(255,255,255,0.08);
-      animation: cardIn 0.7s ease-out;
+    /* ── CARD ── */
+    .card {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 500px;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--border); border-radius: 28px;
+      padding: 44px 40px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+      animation: cardIn 0.6s cubic-bezier(0.16,1,0.3,1);
     }
 
-    /* --- Header --- */
-    .form-emoji {
-      font-size: 3rem;
-      text-align: center;
-      margin-bottom: 8px;
-      animation: bounce 1s ease-in-out;
+    /* ── STEPS INDICATOR ── */
+    .steps {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 36px; justify-content: center;
     }
-    .form-title {
-      font-size: clamp(1.5rem, 4vw, 2rem);
-      font-weight: 800;
-      text-align: center;
-      margin-bottom: 6px;
-      background: linear-gradient(135deg, #fff 0%, #e0e7ff 50%, #c4b5fd 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 100px;
+      background: rgba(255,255,255,0.15); transition: all 0.4s ease;
     }
-    .form-subtitle {
-      text-align: center;
-      color: rgba(255,255,255,0.5);
-      font-size: 0.95rem;
-      margin-bottom: 32px;
-      font-weight: 500;
-    }
+    .step-dot.active { width: 28px; background: var(--accent); }
+    .step-dot.done { background: var(--success); }
 
-    /* --- Form Fields --- */
-    .form-group {
-      margin-bottom: 20px;
+    /* ── FORM VIEW ── */
+    .view { display: none; animation: fadeIn 0.4s ease; }
+    .view.active { display: block; }
+    .view-header { margin-bottom: 28px; }
+    .view-emoji { font-size: 2.2rem; margin-bottom: 10px; }
+    .view-title {
+      font-family: 'Sora', sans-serif; font-size: 1.55rem; font-weight: 800;
+      line-height: 1.2; margin-bottom: 6px;
+      background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
+    .view-sub { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+
+    /* ── FORM FIELDS ── */
+    .form-group { margin-bottom: 18px; }
     .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 8px;
-      letter-spacing: 0.02em;
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: rgba(255,255,255,0.6); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase;
     }
     .req { color: #f87171; margin-left: 2px; }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      width: 100%;
-      padding: 14px 18px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      color: #fff;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 500;
-      outline: none;
-      transition: all 0.3s ease;
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 13px 16px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 500; outline: none; transition: all 0.25s ease;
     }
     .form-group select option { background: #1e293b; color: #fff; }
-    .form-group input::placeholder,
-    .form-group textarea::placeholder {
-      color: rgba(255,255,255,0.25);
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.2); }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      border-color: rgba(99,102,241,0.6); background: rgba(255,255,255,0.07);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
     }
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      border-color: rgba(139,92,246,0.6);
-      background: rgba(255,255,255,0.08);
-      box-shadow: 0 0 0 3px rgba(139,92,246,0.15), 0 0 20px rgba(139,92,246,0.08);
-    }
-    .form-group textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
 
-    /* --- Submit Button --- */
-    .submit-btn {
-      width: 100%;
-      padding: 16px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      font-family: 'Inter', sans-serif;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      background: ${funnel.cta_color || 'linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa)'};
-      color: #fff;
-      margin-top: 8px;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-      letter-spacing: 0.01em;
-      box-shadow: 0 8px 30px rgba(124,58,237,0.3);
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%; padding: 15px;
+      font-family: 'Sora', sans-serif; font-size: 0.95rem; font-weight: 700;
+      border: none; border-radius: 14px; cursor: pointer;
+      background: var(--accent); color: #fff;
+      margin-top: 8px; transition: all 0.25s ease;
+      box-shadow: 0 6px 24px var(--accent-glow);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(124,58,237,0.45);
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 32px var(--accent-glow); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-back {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 20px;
+      transition: color 0.2s;
     }
-    .submit-btn:active {
-      transform: translateY(0);
-    }
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
+    .btn-back:hover { color: #fff; }
 
-    /* --- Success State --- */
-    .success-msg {
-      display: none;
-      text-align: center;
-      padding: 40px 20px;
-      animation: successIn 0.6s ease-out;
+    /* ── ERROR ── */
+    .error-box {
+      display: none; background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3); border-radius: 10px;
+      padding: 11px 14px; margin-bottom: 16px; font-size: 0.87rem;
+      color: #fca5a5; text-align: center;
     }
-    .success-msg.show { display: block; }
-    .success-emoji { font-size: 4rem; margin-bottom: 16px; }
+    .error-box.show { display: block; }
+
+    /* ── CALENDAR ── */
+    .calendar-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .cal-month {
+      font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; color: #fff;
+    }
+    .cal-nav {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: #fff; border-radius: 8px; width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1rem; transition: all 0.2s;
+    }
+    .cal-nav:hover { background: rgba(255,255,255,0.12); }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7,1fr); gap: 4px;
+      margin-bottom: 20px;
+    }
+    .cal-day-label {
+      text-align: center; font-size: 0.7rem; font-weight: 700;
+      color: var(--text-muted); padding: 6px 0; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; border: 1px solid transparent; color: #fff;
+    }
+    .cal-day:hover:not(.disabled):not(.empty) { background: rgba(255,255,255,0.1); }
+    .cal-day.today { border-color: rgba(99,102,241,0.5); color: var(--accent); }
+    .cal-day.selected { background: var(--accent); color: #fff; box-shadow: 0 4px 16px var(--accent-glow); }
+    .cal-day.disabled { color: rgba(255,255,255,0.15); cursor: not-allowed; }
+    .cal-day.empty { cursor: default; }
+    .cal-day.has-slots::after {
+      content: ''; display: block; width: 4px; height: 4px;
+      background: var(--success); border-radius: 50%;
+      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    }
+    .cal-day { position: relative; }
+
+    /* ── SLOTS ── */
+    .slots-loading {
+      text-align: center; padding: 32px 0; color: var(--text-muted); font-size: 0.9rem;
+    }
+    .slots-loading .spinner {
+      width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    .slots-empty { text-align: center; padding: 28px 0; color: var(--text-muted); font-size: 0.9rem; }
+    .slots-section { margin-bottom: 20px; }
+    .slots-section-title {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;
+    }
+    .slots-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .slot-btn {
+      padding: 10px 8px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s;
+    }
+    .slot-btn:hover { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.4); }
+    .slot-btn.selected {
+      background: var(--accent); border-color: var(--accent);
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .slot-btn.full { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+
+    /* ── SELECTED SUMMARY ── */
+    .selection-summary {
+      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;
+      display: none; font-size: 0.88rem; color: rgba(255,255,255,0.8);
+    }
+    .selection-summary.show { display: flex; align-items: center; gap: 10px; }
+    .selection-summary strong { color: var(--success); }
+
+    /* ── SUCCESS ── */
+    .success-view { text-align: center; padding: 20px 0; }
+    .success-icon {
+      width: 72px; height: 72px; background: rgba(16,185,129,0.15);
+      border: 2px solid rgba(16,185,129,0.3); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin: 0 auto 20px;
+      animation: successPop 0.5s cubic-bezier(0.16,1,0.3,1);
+    }
     .success-title {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #34d399, #10b981);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 800;
+      margin-bottom: 8px; color: var(--success);
     }
-    .success-text {
-      color: rgba(255,255,255,0.6);
-      font-size: 1rem;
+    .success-text { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
+    .success-detail {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 20px; text-align: left;
+      font-size: 0.87rem; color: rgba(255,255,255,0.7); line-height: 1.8;
     }
+    .success-detail strong { color: #fff; }
 
-    /* --- Error State --- */
-    .error-msg {
-      display: none;
-      background: rgba(239,68,68,0.15);
-      border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
-      font-size: 0.9rem;
-      color: #fca5a5;
-      text-align: center;
-    }
-    .error-msg.show { display: block; }
-
-    /* --- Powered By Badge --- */
-    .powered-badge {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(255,255,255,0.07);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 8px 16px;
-      border-radius: 50px;
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.5);
-      border: 1px solid rgba(255,255,255,0.08);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      z-index: 9999;
-    }
-
-    /* --- Confetti --- */
+    /* ── CONFETTI ── */
     .confetti-piece {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-      z-index: 9998;
-      pointer-events: none;
+      position: fixed; border-radius: 2px; z-index: 9998; pointer-events: none;
       animation: confettiFall 3s ease-out forwards;
     }
 
-    /* --- Animations --- */
-    @keyframes cardIn {
-      from { opacity: 0; transform: translateY(30px) scale(0.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-12px); }
-      60% { transform: translateY(-4px); }
-    }
-    @keyframes successIn {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    @keyframes confettiFall {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    /* ── BADGE ── */
+    .badge {
+      position: fixed; bottom: 18px; right: 18px;
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(12px);
+      padding: 7px 14px; border-radius: 100px; font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 5px; z-index: 9999;
     }
 
-    /* --- Light Theme (Overrides) --- */
-    body.theme-light { background: #f8fafc; color: #0f172a; }
+    /* ── ANIMATIONS ── */
+    @keyframes cardIn { from { opacity: 0; transform: translateY(28px) scale(0.97); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes successPop { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+
+    /* ── LIGHT THEME ── */
+    body.theme-light { background: #f1f5f9; color: #0f172a; }
     body.theme-light::before { display: none; }
-    body.theme-light .form-card { background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.05); }
-    body.theme-light .form-title { background: none; -webkit-text-fill-color: #0f172a; }
-    body.theme-light .form-subtitle { color: #475569; }
-    body.theme-light .form-group label { color: #475569; }
-    body.theme-light .form-group input, body.theme-light .form-group textarea { background: #fff; border: 1px solid #cbd5e1; color: #0f172a; }
-    body.theme-light .form-group input::placeholder, body.theme-light .form-group textarea::placeholder { color: #94a3b8; }
-    body.theme-light .form-group input:focus, body.theme-light .form-group textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); background: #fff; }
-    body.theme-light .powered-badge { background: #fff; color: #64748b; border-color: #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    body.theme-light .success-title { background: none; -webkit-text-fill-color: #10b981; }
-    body.theme-light .success-text { color: #475569; }
+    body.theme-light .card { background: #fff; border-color: #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
+    body.theme-light .view-title { background: none; -webkit-text-fill-color: #0f172a; }
+    body.theme-light .view-sub { color: #64748b; }
+    body.theme-light .form-group label { color: #64748b; }
+    body.theme-light .form-group input, body.theme-light .form-group textarea, body.theme-light .form-group select { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+    body.theme-light .form-group input::placeholder { color: #94a3b8; }
+    body.theme-light .cal-day { color: #334155; }
+    body.theme-light .cal-day.disabled { color: #cbd5e1; }
+    body.theme-light .slot-btn { background: #f8fafc; border-color: #e2e8f0; color: #334155; }
+    body.theme-light .cal-nav { background: #f1f5f9; border-color: #e2e8f0; color: #334155; }
+    body.theme-light .btn-back { color: #94a3b8; }
+    body.theme-light .btn-back:hover { color: #334155; }
+    body.theme-light .success-detail { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+    body.theme-light .success-detail strong { color: #0f172a; }
+    body.theme-light .badge { background: #fff; color: #94a3b8; border-color: #e2e8f0; }
 
-    /* ── Responsivo ── */
-    @media (max-width: 640px) {
-      .form-card { padding: 32px 24px; border-radius: 18px; }
-      .powered-badge { bottom: 12px; right: 12px; font-size: 11px; }
+    /* ── RESPONSIVE ── */
+    @media (max-width: 520px) {
+      .card { padding: 32px 20px; border-radius: 20px; }
+      .slots-grid { grid-template-columns: repeat(2,1fr); }
     }
   </style>
 </head>
 <body class="theme-${funnel.theme || 'dark'}">
-  <div class="form-card">
-    <div id="formView">
-      <div class="form-emoji">🎯</div>
-      <h1 class="form-title">¡Estás a un paso!</h1>
-      <p class="form-subtitle">Completa tus datos y te contactaremos pronto</p>
+  <div class="card">
+    <!-- Steps indicator -->
+    <div class="steps">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
 
-      <div id="errorBox" class="error-msg"></div>
-
+    <!-- VIEW 1: Formulario -->
+    <div class="view active" id="view-form">
+      <div class="view-header">
+        <div class="view-emoji">🎯</div>
+        <h1 class="view-title">¡Estás a un paso!</h1>
+        <p class="view-sub">Completa tus datos para agendar tu cita</p>
+      </div>
+      <div id="errorBox" class="error-box"></div>
       <form id="leadForm" novalidate>
         ${fieldsHTML}
-        <button type="submit" class="submit-btn" id="submitBtn">
-          Enviar información
+        <button type="submit" class="btn-primary" id="submitBtn">
+          Continuar <span>→</span>
         </button>
       </form>
     </div>
 
-    <div id="successView" class="success-msg">
-      <div class="success-emoji">🎉</div>
-      <h2 class="success-title">✅ ¡Gracias!</h2>
-      <p class="success-text">Te contactaremos pronto.</p>
+    <!-- VIEW 2: Calendario -->
+    <div class="view" id="view-calendar">
+      <button class="btn-back" id="backToForm">← Volver</button>
+      <div class="view-header">
+        <div class="view-emoji">📅</div>
+        <h1 class="view-title">Elige tu fecha</h1>
+        <p class="view-sub">Selecciona el día y horario disponible</p>
+      </div>
+
+      <div class="calendar-header">
+        <button class="cal-nav" id="prevMonth">‹</button>
+        <span class="cal-month" id="calMonth">Junio 2026</span>
+        <button class="cal-nav" id="nextMonth">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div id="slotsContainer"></div>
+
+      <div class="selection-summary" id="selectionSummary">
+        <span>📌</span>
+        <span id="summaryText"></span>
+      </div>
+
+      <button class="btn-primary" id="confirmBtn" disabled style="opacity:0.4">
+        Confirmar cita →
+      </button>
+    </div>
+
+    <!-- VIEW 3: Confirmación -->
+    <div class="view" id="view-success">
+      <div class="success-view">
+        <div class="success-icon">🎉</div>
+        <h2 class="success-title">¡Cita confirmada!</h2>
+        <p class="success-text">Tu cita ha sido agendada exitosamente. Te enviaremos un recordatorio.</p>
+        <div class="success-detail" id="successDetail"></div>
+      </div>
     </div>
   </div>
 
-  <div class="powered-badge">
-    <span>🚀</span> Powered by <strong>Nuestra Plataforma</strong>
-  </div>
+  <div class="badge">⚡ Powered by KiuFlow</div>
 
   <script>
-    (function() {
-      var form = document.getElementById('leadForm');
-      var submitBtn = document.getElementById('submitBtn');
-      var errorBox = document.getElementById('errorBox');
-      var formView = document.getElementById('formView');
-      var successView = document.getElementById('successView');
+  (function() {
+    var FUNNEL_ID = '${funnel.id}';
+    var FIELDS = ${JSON.stringify(parsedFields)};
+    var COLORS = ['#7c3aed','#a78bfa','#34d399','#f59e0b','#ec4899','#3b82f6'];
+    var clientId = null;
+    var selectedDate = null;
+    var selectedSlot = null;
+    var currentYear, currentMonth;
 
-      // ── Colores para confetti ──
-      var COLORS = ['#7c3aed','#8b5cf6','#a78bfa','#34d399','#f59e0b','#ec4899','#3b82f6','#10b981'];
+    // ── DOM refs ──
+    var form = document.getElementById('leadForm');
+    var submitBtn = document.getElementById('submitBtn');
+    var errorBox = document.getElementById('errorBox');
+    var dot1 = document.getElementById('dot1');
+    var dot2 = document.getElementById('dot2');
+    var dot3 = document.getElementById('dot3');
 
-      // ── Lanzar confetti ──
-      function launchConfetti() {
-        for (var i = 0; i < 60; i++) {
-          var piece = document.createElement('div');
-          piece.className = 'confetti-piece';
-          piece.style.left = Math.random() * 100 + 'vw';
-          piece.style.top = '-10px';
-          piece.style.background = COLORS[Math.floor(Math.random() * COLORS.length)];
-          piece.style.width = (6 + Math.random() * 8) + 'px';
-          piece.style.height = (6 + Math.random() * 8) + 'px';
-          piece.style.animationDuration = (2 + Math.random() * 2) + 's';
-          piece.style.animationDelay = (Math.random() * 0.8) + 's';
-          document.body.appendChild(piece);
-          // Limpiar después de la animación
-          setTimeout(function(el) { el.remove(); }, 5000, piece);
-        }
+    // ── Init calendar with current month ──
+    var now = new Date();
+    currentYear = now.getFullYear();
+    currentMonth = now.getMonth();
+    renderCalendar();
+
+    // ── Navigation ──
+    document.getElementById('prevMonth').addEventListener('click', function() {
+      currentMonth--;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      renderCalendar();
+    });
+    document.getElementById('nextMonth').addEventListener('click', function() {
+      currentMonth++;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      renderCalendar();
+    });
+    document.getElementById('backToForm').addEventListener('click', function() {
+      showView('form');
+    });
+    document.getElementById('confirmBtn').addEventListener('click', confirmAppointment);
+
+    // ── Show view ──
+    function showView(name) {
+      document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+      document.getElementById('view-' + name).classList.add('active');
+      dot1.className = 'step-dot' + (name === 'form' ? ' active' : ' done');
+      dot2.className = 'step-dot' + (name === 'calendar' ? ' active' : name === 'success' ? ' done' : '');
+      dot3.className = 'step-dot' + (name === 'success' ? ' active' : '');
+    }
+
+    // ── Calendar render ──
+    function renderCalendar() {
+      var months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      document.getElementById('calMonth').textContent = months[currentMonth] + ' ' + currentYear;
+      var grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+      var days = ['LU','MA','MI','JU','VI','SÁ','DO'];
+      days.forEach(function(d) {
+        var el = document.createElement('div');
+        el.className = 'cal-day-label'; el.textContent = d;
+        grid.appendChild(el);
+      });
+      var firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      var daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      firstDay = (firstDay + 6) % 7; // Monday first
+      for (var i = 0; i < firstDay; i++) {
+        var empty = document.createElement('div'); empty.className = 'cal-day empty'; grid.appendChild(empty);
       }
-
-      // ── Envío del formulario ──
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        errorBox.classList.remove('show');
-
-        // Recopilar datos
-        var data = {};
-        var fields = ${JSON.stringify(parsedFields)};
-        var missing = [];
-
-        fields.forEach(function(f) {
-          var el = document.getElementById('field_' + f.name);
-          var val = el ? el.value.trim() : '';
-          data[f.name] = val;
-          if (f.required && !val) missing.push(f.label);
-        });
-
-        // Validar campos requeridos
-        if (missing.length > 0) {
-          errorBox.textContent = 'Completa los campos: ' + missing.join(', ');
-          errorBox.classList.add('show');
-          return;
+      var today = new Date(); today.setHours(0,0,0,0);
+      for (var d = 1; d <= daysInMonth; d++) {
+        var dayEl = document.createElement('div');
+        dayEl.className = 'cal-day';
+        dayEl.textContent = d;
+        var thisDate = new Date(currentYear, currentMonth, d);
+        thisDate.setHours(0,0,0,0);
+        if (thisDate < today) {
+          dayEl.classList.add('disabled');
+        } else {
+          var dateStr = formatDate(currentYear, currentMonth + 1, d);
+          if (thisDate.toDateString() === today.toDateString()) dayEl.classList.add('today');
+          if (selectedDate === dateStr) dayEl.classList.add('selected');
+          (function(ds, el) {
+            el.addEventListener('click', function() { selectDate(ds); });
+          })(dateStr, dayEl);
         }
+        grid.appendChild(dayEl);
+      }
+    }
 
-        // Deshabilitar botón mientras envía
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Enviando...';
+    function formatDate(y, m, d) {
+      return y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    }
 
-        // Enviar al backend
-        fetch('/api/funnels/${funnel.id}/leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: data })
+    // ── Select date ──
+    function selectDate(dateStr) {
+      selectedDate = dateStr;
+      selectedSlot = null;
+      document.getElementById('selectionSummary').classList.remove('show');
+      document.getElementById('confirmBtn').disabled = true;
+      document.getElementById('confirmBtn').style.opacity = '0.4';
+      renderCalendar();
+      loadSlots(dateStr);
+    }
+
+    // ── Load slots ──
+    function loadSlots(dateStr) {
+      var container = document.getElementById('slotsContainer');
+      container.innerHTML = '<div class="slots-loading"><div class="spinner"></div>Cargando horarios...</div>';
+      fetch('/api/crm/availability?date=' + dateStr)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var slots = data.slots || [];
+          slots = slots.filter(function(s) { return s.available > 0; });
+          if (slots.length === 0) {
+            container.innerHTML = '<div class="slots-empty">😔 No hay horarios disponibles para este día.<br>Por favor elige otra fecha.</div>';
+            return;
+          }
+          renderSlots(slots);
         })
-        .then(function(r) {
-          if (!r.ok) return r.json().then(function(b) { throw new Error(b.error || 'Error al enviar'); });
-          return r.json();
-        })
-        .then(function() {
-          // Éxito: mostrar mensaje y confetti
-          formView.style.display = 'none';
-          successView.classList.add('show');
-          launchConfetti();
-        })
-        .catch(function(err) {
-          errorBox.textContent = err.message || 'Error inesperado. Intenta de nuevo.';
-          errorBox.classList.add('show');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Enviar información';
+        .catch(function() {
+          container.innerHTML = '<div class="slots-empty">⚠️ Error cargando horarios. Intenta de nuevo.</div>';
+        });
+    }
+
+    // ── Render slots grouped by morning/afternoon ──
+    function renderSlots(slots) {
+      var morning = slots.filter(function(s) { return parseInt(s.startTime) < 12; });
+      var afternoon = slots.filter(function(s) { return parseInt(s.startTime) >= 12; });
+      var html = '';
+      if (morning.length > 0) {
+        html += '<div class="slots-section"><div class="slots-section-title">☀️ Por la mañana</div><div class="slots-grid">';
+        morning.forEach(function(s) { html += slotBtn(s); });
+        html += '</div></div>';
+      }
+      if (afternoon.length > 0) {
+        html += '<div class="slots-section"><div class="slots-section-title">🌅 Por la tarde</div><div class="slots-grid">';
+        afternoon.forEach(function(s) { html += slotBtn(s); });
+        html += '</div></div>';
+      }
+      document.getElementById('slotsContainer').innerHTML = html;
+      document.querySelectorAll('.slot-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var sd = btn.dataset.startDate;
+          var st = btn.dataset.startTime;
+          selectSlot(sd, st, btn);
         });
       });
-    })();
+    }
+
+    function slotBtn(s) {
+      var full = s.available === 0;
+      return '<button class="slot-btn' + (full ? ' full' : '') + '" data-start-date="' + s.startDate + '" data-start-time="' + s.startTime + '"' + (full ? ' disabled' : '') + '>' + s.startTime + '</button>';
+    }
+
+    // ── Select slot ──
+    function selectSlot(startDate, startTime, el) {
+      selectedSlot = { startDate: startDate, startTime: startTime };
+      document.querySelectorAll('.slot-btn').forEach(function(b) { b.classList.remove('selected'); });
+      el.classList.add('selected');
+      var summary = document.getElementById('selectionSummary');
+      var parts = selectedDate.split('-');
+      var dateObj = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+      var days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+      var months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      document.getElementById('summaryText').innerHTML = '<strong>' + days[dateObj.getDay()] + ' ' + dateObj.getDate() + ' de ' + months[dateObj.getMonth()] + '</strong> a las <strong>' + startTime + '</strong>';
+      summary.classList.add('show');
+      var btn = document.getElementById('confirmBtn');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+
+    // ── Confetti ──
+    function launchConfetti() {
+      for (var i = 0; i < 55; i++) {
+        var piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.top = '-10px';
+        piece.style.background = COLORS[Math.floor(Math.random() * COLORS.length)];
+        piece.style.width = (5 + Math.random() * 7) + 'px';
+        piece.style.height = (5 + Math.random() * 7) + 'px';
+        piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+        piece.style.animationDelay = (Math.random() * 0.6) + 's';
+        document.body.appendChild(piece);
+        setTimeout(function(el) { el.remove(); }, 5000, piece);
+      }
+    }
+
+    // ── Confirm appointment ──
+    function confirmAppointment() {
+      if (!clientId || !selectedSlot) return;
+      var btn = document.getElementById('confirmBtn');
+      btn.disabled = true; btn.textContent = 'Confirmando...';
+      fetch('/api/crm/appointment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          clientId: clientId, 
+          date: selectedSlot.startDate,
+          funnelId: FUNNEL_ID
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        var parts = selectedDate.split('-');
+        var dateObj = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        var days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+        var months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        document.getElementById('successDetail').innerHTML =
+          '📅 <strong>' + days[dateObj.getDay()] + ', ' + dateObj.getDate() + ' de ' + months[dateObj.getMonth()] + ' ' + parts[0] + '</strong><br>' +
+          '🕐 <strong>' + selectedSlot.startTime + '</strong><br>' +
+          '✅ Estado: <strong>Confirmada</strong>';
+        showView('success');
+        launchConfetti();
+      })
+      .catch(function() {
+        btn.disabled = false; btn.textContent = 'Confirmar cita →';
+        alert('Error al confirmar la cita. Intenta de nuevo.');
+      });
+    }
+
+    // ── Form submit ──
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      errorBox.classList.remove('show');
+      var data = {};
+      var missing = [];
+      FIELDS.forEach(function(f) {
+        var el = document.getElementById('field_' + f.name);
+        var val = el ? el.value.trim() : '';
+        data[f.name] = val;
+        if (f.required && !val) missing.push(f.label);
+      });
+      if (missing.length > 0) {
+        errorBox.textContent = 'Completa los campos: ' + missing.join(', ');
+        errorBox.classList.add('show'); return;
+      }
+      submitBtn.disabled = true; submitBtn.textContent = 'Enviando...';
+      fetch('/api/funnels/' + FUNNEL_ID + '/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: data })
+      })
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(b) { throw new Error(b.error || 'Error al enviar'); });
+        return r.json();
+      })
+      .then(function(res) {
+        clientId = res.lead && res.lead.id ? res.lead.id : null;
+        showView('calendar');
+      })
+      .catch(function(err) {
+        errorBox.textContent = err.message || 'Error inesperado.';
+        errorBox.classList.add('show');
+        submitBtn.disabled = false; submitBtn.textContent = 'Continuar →';
+      });
+    });
+
+  })();
   </script>
 </body>
 </html>`;
 }
 
-// ── UTILIDAD: escapar HTML para prevenir XSS ───────────────────────────────
 function escapeHtml(text) {
   if (!text) return "";
   return String(text)

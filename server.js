@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const db = require("./db"); // initializes DB on first import
 const path = require("path");
 const { renderFunnelLanding, renderFunnelForm } = require("./funnel-renderer");
 
@@ -13,98 +12,105 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Rutas
+app.use("/api/clients", require("./routes/clients"));
 app.use("/api/projects", require("./routes/projects"));
 app.use("/api/templates", require("./routes/templates"));
 app.use("/api/funnels", require("./routes/funnels"));
 app.use("/api/funnels", require("./routes/leads"));
+app.use("/api/crm", require("./routes/crm"));
 
+/**
+ * Interceptores de SSR (Server-Side Rendering)
+ * Manejan las rutas públicas compartidas para inyectar dinámicamente
+ * el código HTML y CSS almacenado en el CRM.
+ */
+app.use("/", require("./routes/public"));
+
+// Ruta para estado de KiuFlow
+app.get("/api/kiuflow/status", async (req, res) => {
+  try {
+    const kiuflowService = require("./services/kiuflowService");
+    const { getValidToken } = require("./services/kiuflowAuth");
+
+    const subs = await kiuflowService.getSuscriptions();
+    const subId = Number(process.env.KIUFLOW_SUBSCRIPTION_ID) || 117;
+    const mySub = subs.find((s) => s.id === subId) || subs[0];
+
+    const token = await getValidToken();
+    let userId = "Desconocido";
+    let userName = "Admin";
+    let userRole = "Admin (API)";
+
+    try {
+      const payload = JSON.parse(
+        Buffer.from(token.split(".")[1], "base64").toString(),
+      );
+      userId = payload.userId || payload.sub || "Admin";
+
+      /**
+       * Obtención de perfil del usuario logueado.
+       * Cruza el identificador del token JWT con la lista de admins
+       * para determinar el nombre real y el rol dentro de la suscripción.
+       */
+      const admins = await kiuflowService.getAdmins(subId);
+      const myAdmin = admins.find((a) => a.user && a.user.id === userId);
+      if (myAdmin) {
+        userName = myAdmin.user.name || myAdmin.name || "Admin";
+        userRole = myAdmin.propietary ? "Propietario" : "Admin";
+      }
+    } catch (e) {}
+
+    res.json({
+      connected: true,
+      subscription: mySub ? mySub.name : "Suscripción Desconocida",
+      user: {
+        id: userId,
+        name: userName,
+        role: userRole,
+      },
+    });
+  } catch (error) {
+    res.json({ connected: false, error: error.message });
+  }
+});
 // Servir frontend estático de React
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-// Retorna clientes (solo demo)
-app.get("/api/clients", async (req, res) => {
-  res.json(await db.getClients());
-});
 
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
-// Dominios y slugs públicos
-app.get("/p/:slug", async (req, res) => {
-  const project = await db.getProjectBySlug(req.params.slug);
-  if (!project) {
-    return res.status(404).send(`
-      <div style="text-align:center; padding: 50px; font-family: sans-serif;">
-        <h1>404 - Página no encontrada</h1>
-        <p>El enlace que buscas no existe o ha sido desactivado.</p>
-      </div>
-    `);
+app.get("/api/kiuflow/subscriptions", async (req, res) => {
+  try {
+    const kiuflowService = require("./services/kiuflowService");
+    const subs = await kiuflowService.getSuscriptions();
+    
+    const result = subs.map(s => ({
+      id: s.id,
+      name: s.name,
+      role: s.userRoles.propietary ? "Propietario" 
+          : s.userRoles.admin ? "Admin" 
+          : s.userRoles.agent ? "Agente" 
+          : "Cliente"
+    }));
+
+    res.json({ subscriptions: result });
+  } catch (error) {
+    res.json({ subscriptions: [], error: error.message });
   }
-
-  const html = project.html || "<h1>Aún no hay contenido</h1>";
-  const css = project.css || "";
-
-  // Inserta el badge dinámicamente al final
-  const badgeHtml = `
-    <div style="position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 10px 15px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: bold; color: #333; z-index: 999999; display: flex; align-items: center; gap: 8px; border: 1px solid #eee;">
-      <span style="font-size: 16px;">🚀</span> Powered by <strong>Nuestra Plataforma</strong>
-    </div>
-  `;
-
-  res.send(`<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${project.name}</title>
-    <style>${css}</style>
-  </head>
-  <body>
-    ${html}
-    ${badgeHtml}
-  </body>
-</html>`);
 });
 
-// Rutas públicas de Funnels
-
-// Vista del Funnel (video)
-app.get("/f/:slug", async (req, res) => {
-  const funnel = await db.getFunnelBySlug(req.params.slug);
-  if (!funnel) {
-    return res.status(404).send(`
-      <div style="text-align:center; padding: 50px; font-family: sans-serif;">
-        <h1>404 - Funnel no encontrado</h1>
-        <p>El enlace que buscas no existe o ha sido desactivado.</p>
-      </div>
-    `);
-  }
-  res.send(renderFunnelLanding({ ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] }));
-});
-
-// Formulario del lead (después del video)
-app.get("/f/:slug/form", async (req, res) => {
-  const funnel = await db.getFunnelBySlug(req.params.slug);
-  if (!funnel) {
-    return res.status(404).send(`
-      <div style="text-align:center; padding: 50px; font-family: sans-serif;">
-        <h1>404 - Funnel no encontrado</h1>
-        <p>El enlace que buscas no existe o ha sido desactivado.</p>
-      </div>
-    `);
-  }
-  res.send(renderFunnelForm({ ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] }));
-});
-
-// Catch all para el router de React
+/**
+ * Catch-all Handler (Single Page Application fallback)
+ * Redirige cualquier petición no capturada hacia la app de React estática.
+ */
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 // Arrancar server
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🚀 Backend corriendo en http://localhost:${PORT}`);
   console.log(`   Endpoints disponibles:`);
   console.log(`   GET  /api/clients`);

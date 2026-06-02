@@ -1,27 +1,46 @@
 # Backend: KiuFlow Builder (API & Renderer)
 
-## Tech Stack
-- Node.js
-- Express.js
-- Prisma (ORM)
-- Supabase (PostgreSQL)
-- Despliegue: Render
+Este es el servidor Node.js que impulsa el **Constructor de Landings y Video Funnels** para la plataforma KiuFlow. 
 
-## Responsabilidad Principal
-Servidor API REST, renderizado de Landing Pages públicas (`funnel-renderer.js`), despacho del frontend compilado y persistencia de datos (Leads, Configuración, Proyectos).
+## 🛠️ Stack Tecnológico
+- **Entorno:** Node.js
+- **Framework:** Express.js
+- **Integración:** API REST nativa de KiuFlow
+- **Arquitectura:** Capas de Servicios y Controladores MVC
 
-## Lógica Clave
-- **Infraestructura (Demo):** La aplicación está conectada a **Supabase** (PostgreSQL) para la base de datos a través de Prisma, y desplegada en servicios cloud como **Render** para la demostración.
-- **Sistema Anti-Cheat (Video Funnels):** 
-  Para evitar que los leads salten el video y revelen el formulario prematuramente:
-  1. El sistema rastrea el video por fragmentos o "chunks" de 1%.
-  2. A medida que avanza a velocidad 1x normal, se registran los índices vistos.
-  3. El botón del formulario (CTA) permanece inyectado pero bloqueado, y solo se libera por código cliente inyectado cuando el array de `chunks` vistos alcanza el umbral (ej. 90%).
-  4. Mantiene el progreso en `sessionStorage` para tolerar recargas de página.
+## 🎯 Responsabilidad Principal
+1. **API Gateway (Proxy Seguro):** Actúa como puente entre el editor frontend (React/GrapesJS) y la API oficial de KiuFlow, evitando exponer credenciales en el navegador.
+2. **Motor SSR (Server-Side Rendering):** Intercepta las URLs públicas (`/p/` para Landings y `/f/` para Funnels) inyectando en tiempo real el código HTML/CSS almacenado en KiuFlow para lograr tiempos de carga ultrarrápidos y alto rendimiento SEO.
+3. **Manejo de Sesión (Service Account):** Mantiene una sesión persistente contra KiuFlow renovando automáticamente el token JWT.
 
-## Comandos de Ejecución
+## 🧠 Lógica Clave
+
+### 1. Sistema Anti-Cheat (Video Funnels)
+Para evitar que los prospectos (leads) salten el video y revelen el formulario prematuramente:
+- El motor SSR inyecta un script inteligente (`funnel-renderer.js`) que rastrea la reproducción del video por "chunks" (fragmentos) del 1%.
+- Solo cuando el espectador alcanza orgánicamente el umbral configurado (ej. 90%), se desbloquea dinámicamente el botón o formulario (Call To Action).
+- Tolerante a recargas de página mediante el uso de `sessionStorage`.
+
+### 2. Sincronización de Leads en Tiempo Real
+Cuando un usuario llena un formulario en una Landing Page, el backend captura los datos:
+- Extrae campos estándar (nombre, email, teléfono).
+- Empaqueta los campos extra en formato `customFields`.
+- Inyecta el Lead directamente al CRM de KiuFlow, asignándole la ruta (leadSource).
+- Dispara asíncronamente el primer recordatorio automático (si el embudo lo tiene configurado).
+
+## 🚀 Comandos de Ejecución
+
+Instalar dependencias:
 ```bash
 pnpm install
-npx prisma generate
+```
+
+Arrancar en modo desarrollo:
+```bash
+pnpm run dev
+```
+
+Arrancar en producción:
+```bash
 pnpm start
 ```

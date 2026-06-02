@@ -1,76 +1,210 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
 
-// GET /api/funnels?client_id=X
+const kiuflowService = require("../services/kiuflowService");
+
+/**
+ * GET /api/funnels
+ * Lista todos los Video Funnels. 
+ * Extrae el identificador público (`public_slug`) dinámicamente desde la URL del CMS.
+ */
 router.get("/", async (req, res) => {
-  const { client_id } = req.query;
-  if (!client_id) return res.status(400).json({ error: "client_id requerido" });
+  try {
+    const subId = req.query.sub_id && req.query.sub_id !== "undefined"
+      ? req.query.sub_id
+      : process.env.KIUFLOW_SUBSCRIPTION_ID;
 
-  const client = await db.getClient(client_id);
-  if (!client) return res.status(404).json({ error: "Cliente no encontrado" });
+    const kfPages = await kiuflowService.listWebpages(subId);
 
-  let funnels = await db.getFunnels(client_id);
-  funnels = funnels.map(f => ({
-    ...f,
-    form_fields: f.form_fields ? JSON.parse(f.form_fields) : []
-  }));
-  res.json({ funnels });
+    const videoFunnels = kfPages.filter((p) => p.type === "VIDEO_FUNNEL");
+
+    const funnels = videoFunnels.map((page) => {
+      let slug = "";
+      if (page.url && page.url.includes("/f/")) {
+        slug = page.url.split("/f/")[1];
+      }
+
+      return {
+        id: page.id,
+        title: page.name || "Sin Nombre",
+        url: page.url,
+        public_slug: slug,
+        is_published: page.published === true || page.published === "true" ? 1 : 0,
+        created_at: new Date().toISOString(),
+        ...(page.jsonData || {}),
+      };
+    });
+
+    res.json({ funnels });
+  } catch (error) {
+    console.error("Error al obtener funnels de KiuFlow:", error.message);
+    res.status(500).json({ error: "No se pudieron obtener los funnels de KiuFlow" });
+  }
 });
 
-// GET /api/funnels/:id
+/**
+ * GET /api/funnels/:id
+ * Recupera la metadata y el contenido (jsonData) de un Video Funnel específico.
+ */
 router.get("/:id", async (req, res) => {
-  const funnel = await db.getFunnel(req.params.id);
-  if (!funnel) return res.status(404).json({ error: "Funnel no encontrado" });
-  res.json({ funnel: { ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] } });
+  try {
+    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    if (!kfPage || kfPage.type !== "VIDEO_FUNNEL") {
+      return res.status(404).json({ error: "Funnel no encontrado en KiuFlow" });
+    }
+
+    let slug = "";
+    if (kfPage.url && kfPage.url.includes("/f/")) {
+      slug = kfPage.url.split("/f/")[1];
+    }
+
+    const funnel = {
+      id: kfPage.id,
+      title: kfPage.name,
+      url: kfPage.url,
+      public_slug: slug,
+      is_published: kfPage.published === "true" ? 1 : 0,
+      ...(kfPage.jsonData || {}),
+    };
+
+    res.json({ funnel });
+  } catch (error) {
+    console.error("Error al obtener funnel:", error.message);
+    res.status(500).json({ error: "No se pudo obtener el funnel" });
+  }
 });
 
-// POST /api/funnels
+/**
+ * POST /api/funnels
+ * Registra un nuevo Video Funnel en KiuFlow.
+ * Asigna una URL pública generada localmente y estado borrador por defecto.
+ */
 router.post("/", async (req, res) => {
-  const { client_id, title, video_url } = req.body;
-
-  if (!client_id || !title || !video_url) {
-    return res.status(400).json({ error: "client_id, title y video_url son requeridos" });
+  const { title, video_url, ...rest } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: "El título es requerido" });
   }
 
-  const client = await db.getClient(client_id);
-  if (!client) return res.status(404).json({ error: "Cliente no encontrado" });
+  try {
+    const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "funnel";
+    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
+    const identifier = Date.now().toString(36);
 
-  const clientFunnels = await db.getFunnels(client_id);
-  if (clientFunnels.length >= 5) {
-    return res.status(400).json({ error: "Límite máximo de 5 funnels alcanzado." });
+    const pageData = {
+      name: title,
+      url: `${domain}/f/${identifier}/${safeTitle}`,
+      published: "false",
+      type: "VIDEO_FUNNEL",
+      origin: process.env.APP_ORIGIN || "KiuFlow",
+      jsonData: { video_url: video_url || "", ...rest },
+    };
+
+    const result = await kiuflowService.createWebpage(pageData);
+    res.status(201).json({
+      funnel: {
+        id: result.id,
+        title,
+        video_url,
+        url: result.url,
+        is_published: 0,
+        ...rest,
+      },
+    });
+  } catch (error) {
+    console.error("Error creando funnel:", error.message);
+    res.status(500).json({ error: "Error al crear el funnel en KiuFlow: " + error.message });
   }
-
-  const funnel = await db.createFunnel(req.body);
-  res.status(201).json({ funnel: { ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] } });
 });
 
-// PUT /api/funnels/:id
+/**
+ * PUT /api/funnels/:id
+ * Actualiza la metadata o configuración interna de un Video Funnel 
+ * preservando los campos inmutables como la URL.
+ */
 router.put("/:id", async (req, res) => {
-  const funnel = await db.updateFunnel(req.params.id, req.body);
-  if (!funnel) return res.status(404).json({ error: "Funnel no encontrado" });
-  res.json({ funnel: { ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] } });
+  try {
+    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const { title, ...rest } = req.body;
+
+    const pageData = {
+      name: title || kfPage.name,
+      url: kfPage.url,
+      published: kfPage.published,
+      type: "VIDEO_FUNNEL",
+      origin: kfPage.origin || process.env.APP_ORIGIN || "KiuFlow",
+      jsonData: {
+        ...(kfPage.jsonData || {}),
+        ...rest,
+      },
+    };
+
+    await kiuflowService.updateWebpage(req.params.id, pageData);
+    res.json({ ok: true, savedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("Error guardando funnel:", error.message);
+    res.status(500).json({ error: "Error al guardar el funnel en KiuFlow" });
+  }
 });
 
-// PUT /api/funnels/:id/publish
+/**
+ * PUT /api/funnels/:id/publish
+ * Habilita el acceso público al Video Funnel.
+ */
 router.put("/:id/publish", async (req, res) => {
-  const funnel = await db.publishFunnel(req.params.id);
-  if (!funnel) return res.status(404).json({ error: "Funnel no encontrado" });
-  res.json({ funnel: { ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] } });
+  try {
+    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const pageData = {
+      name: kfPage.name,
+      url: kfPage.url,
+      published: "true",
+      type: kfPage.type,
+      origin: kfPage.origin || process.env.APP_ORIGIN || "KiuFlow",
+      jsonData: kfPage.jsonData || {},
+    };
+
+    await kiuflowService.updateWebpage(req.params.id, pageData);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Error publicando funnel:", error.message);
+    res.status(500).json({ error: "Error al publicar en KiuFlow" });
+  }
 });
 
-// PUT /api/funnels/:id/unpublish
+/**
+ * PUT /api/funnels/:id/unpublish
+ * Cambia el estado del Video Funnel a borrador (inaccesible públicamente).
+ */
 router.put("/:id/unpublish", async (req, res) => {
-  const funnel = await db.unpublishFunnel(req.params.id);
-  if (!funnel) return res.status(404).json({ error: "Funnel no encontrado" });
-  res.json({ funnel: { ...funnel, form_fields: funnel.form_fields ? JSON.parse(funnel.form_fields) : [] } });
+  try {
+    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const pageData = {
+      name: kfPage.name,
+      url: kfPage.url,
+      published: "false",
+      type: kfPage.type,
+      origin: kfPage.origin || process.env.APP_ORIGIN || "KiuFlow",
+      jsonData: kfPage.jsonData || {},
+    };
+    await kiuflowService.updateWebpage(req.params.id, pageData);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Error despublicando funnel:", error.message);
+    res.status(500).json({ error: "Error al despublicar en KiuFlow" });
+  }
 });
 
-// DELETE /api/funnels/:id
+/**
+ * DELETE /api/funnels/:id
+ * Elimina permanentemente el Video Funnel del repositorio.
+ */
 router.delete("/:id", async (req, res) => {
-  const { client_id } = req.query;
-  await db.deleteFunnel(req.params.id, client_id);
-  res.json({ ok: true });
+  try {
+    await kiuflowService.deleteWebpage(req.params.id);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Error eliminando funnel:", error.message);
+    res.status(500).json({ error: "Error al eliminar en KiuFlow" });
+  }
 });
 
 module.exports = router;
