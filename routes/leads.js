@@ -15,7 +15,8 @@ router.post("/:funnelId/leads", async (req, res) => {
      * Recuperamos los parámetros del Video Funnel desde KiuFlow 
      * para heredar configuraciones como el canal asignado o recordatorios.
      */
-    const funnel = await kiuflowService.getWebpage(funnelId);
+    const subIdToUse = req.query.sub_id || req.body.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const funnel = await kiuflowService.getWebpage(funnelId, subIdToUse);
     if (!funnel) return res.status(404).json({ error: "Funnel no encontrado" });
 
     /**
@@ -46,7 +47,7 @@ router.post("/:funnelId/leads", async (req, res) => {
       clientData.channelId = funnel.jsonData.defaultChannelId;
     }
 
-    const newClient = await kiuflowService.createClient(clientData);
+    const newClient = await kiuflowService.createClient(clientData, subIdToUse);
     const clientId = newClient.id;
 
     /**
@@ -65,7 +66,7 @@ router.post("/:funnelId/leads", async (req, res) => {
             templateId: r1.templateId || null,
             content: r1.content,
             remindAt
-          });
+          }, subIdToUse);
         } catch (err) { 
           console.error("Error creando R1:", err.message);
         }
@@ -90,7 +91,8 @@ router.get("/:funnelId/leads", async (req, res) => {
      * según el origen (leadSource) asignado al crear el lead.
      * TODO: Optimizar si KiuFlow habilita búsqueda nativa por customField.
      */
-    const clients = await kiuflowService.getClients();
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const clients = await kiuflowService.getClients(subIdToUse);
     
     // Filtrado de Leads correspondientes a este embudo
     const funnelLeads = clients.filter(c => 
@@ -121,7 +123,8 @@ router.get("/:funnelId/leads/export", async (req, res) => {
   const { funnelId } = req.params;
 
   try {
-    const clients = await kiuflowService.getClients();
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const clients = await kiuflowService.getClients(subIdToUse);
     const leads = clients.filter(c => c.customFields && c.customFields.leadSource === funnelId);
 
     const csvRows = [];
