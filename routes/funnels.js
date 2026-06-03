@@ -143,7 +143,16 @@ router.put("/:id", async (req, res) => {
     };
 
     await kiuflowService.updateWebpage(req.params.id, pageData, subIdToUse);
-    res.json({ ok: true, savedAt: new Date().toISOString() });
+
+    const updatedFunnel = {
+      id: req.params.id,
+      title: pageData.name,
+      url: kfPage.url,
+      is_published: kfPage.published === true || kfPage.published === "true" ? 1 : 0,
+      ...(pageData.jsonData || {}),
+    };
+
+    res.json({ ok: true, savedAt: new Date().toISOString(), funnel: updatedFunnel });
   } catch (error) {
     console.error("Error guardando funnel:", error.message);
     res.status(500).json({ error: "Error al guardar el funnel en KiuFlow" });
