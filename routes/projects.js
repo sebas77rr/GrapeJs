@@ -62,11 +62,13 @@ router.get("/:id", async (req, res) => {
 
 // POST /api/projects
 router.post("/", async (req, res) => {
-  const { name, template_id } = req.body;
+  const { name, template_id, sub_id } = req.body;
   if (!name) return res.status(400).json({ error: "name es requerido" });
 
+  const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+
   try {
-    const kfPages = await kiuflowService.listWebpages();
+    const kfPages = await kiuflowService.listWebpages(subIdToUse);
     const count = kfPages.filter(p => p.type === "LANDING_PAGE").length;
     
     /**
@@ -81,7 +83,7 @@ router.post("/", async (req, res) => {
     }
 
     const safeName = name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'landing';
-    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
+    const domain = process.env.APP_DOMAIN || "https://builder-api.kiuflow.online";
     const identifier = Date.now().toString(36);
     const finalUrl = `${domain}/p/${identifier}/${safeName}`;
 
@@ -104,7 +106,7 @@ router.post("/", async (req, res) => {
       }
     };
 
-    const kfResponse = await kiuflowService.createWebpage(pageData);
+    const kfResponse = await kiuflowService.createWebpage(pageData, subIdToUse);
 
     const project = {
       id: kfResponse.id || kfResponse.pageId || Date.now(),
@@ -124,8 +126,9 @@ router.post("/", async (req, res) => {
 
 // GET /api/projects/:id/preview
 router.get("/:id/preview", async (req, res) => {
+  const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     if (!kfPage) return res.status(404).send("Proyecto no encontrado");
 
     const html = kfPage.jsonData?.gjs_html || "<h1>Aún no hay contenido</h1>";
@@ -143,7 +146,8 @@ router.get("/:id/preview", async (req, res) => {
 
 // PUT /api/projects/:id
 router.put("/:id", async (req, res) => {
-  const { json_data, html, css, name } = req.body;
+  const { json_data, html, css, name, sub_id } = req.body;
+  const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   
   try {
     /**
@@ -151,7 +155,7 @@ router.put("/:id", async (req, res) => {
      * Obtenemos la versión actual desde KiuFlow antes de actualizar 
      * para no sobreescribir la URL ni las configuraciones ajenas a GrapesJS.
      */
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     if (!kfPage) return res.status(404).json({ error: "Proyecto no encontrado en KiuFlow" });
 
     /**
@@ -172,7 +176,7 @@ router.put("/:id", async (req, res) => {
       }
     };
 
-    await kiuflowService.updateWebpage(req.params.id, pageData);
+    await kiuflowService.updateWebpage(req.params.id, pageData, subIdToUse);
     res.json({ ok: true, savedAt: new Date().toISOString() });
   } catch(error) {
     console.error("Error guardando proyecto:", error.message);
@@ -182,8 +186,9 @@ router.put("/:id", async (req, res) => {
 
 // DELETE /api/projects/:id
 router.delete("/:id", async (req, res) => {
+  const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    await kiuflowService.deleteWebpage(req.params.id);
+    await kiuflowService.deleteWebpage(req.params.id, subIdToUse);
     res.json({ ok: true });
   } catch(error) {
     console.error("Error eliminando:", error.message);

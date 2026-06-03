@@ -47,8 +47,9 @@ router.get("/", async (req, res) => {
  * Recupera la metadata y el contenido (jsonData) de un Video Funnel específico.
  */
 router.get("/:id", async (req, res) => {
+  const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     if (!kfPage || kfPage.type !== "VIDEO_FUNNEL") {
       return res.status(404).json({ error: "Funnel no encontrado en KiuFlow" });
     }
@@ -80,14 +81,16 @@ router.get("/:id", async (req, res) => {
  * Asigna una URL pública generada localmente y estado borrador por defecto.
  */
 router.post("/", async (req, res) => {
-  const { title, video_url, ...rest } = req.body;
+  const { title, video_url, sub_id, ...rest } = req.body;
   if (!title) {
     return res.status(400).json({ error: "El título es requerido" });
   }
 
+  const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+
   try {
     const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "funnel";
-    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
+    const domain = process.env.APP_DOMAIN || "https://builder-api.kiuflow.online";
     const identifier = Date.now().toString(36);
 
     const pageData = {
@@ -99,7 +102,7 @@ router.post("/", async (req, res) => {
       jsonData: { video_url: video_url || "", ...rest },
     };
 
-    const result = await kiuflowService.createWebpage(pageData);
+    const result = await kiuflowService.createWebpage(pageData, subIdToUse);
     res.status(201).json({
       funnel: {
         id: result.id,
@@ -122,9 +125,10 @@ router.post("/", async (req, res) => {
  * preservando los campos inmutables como la URL.
  */
 router.put("/:id", async (req, res) => {
+  const { title, sub_id, ...rest } = req.body;
+  const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
-    const { title, ...rest } = req.body;
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
 
     const pageData = {
       name: title || kfPage.name,
@@ -138,7 +142,7 @@ router.put("/:id", async (req, res) => {
       },
     };
 
-    await kiuflowService.updateWebpage(req.params.id, pageData);
+    await kiuflowService.updateWebpage(req.params.id, pageData, subIdToUse);
     res.json({ ok: true, savedAt: new Date().toISOString() });
   } catch (error) {
     console.error("Error guardando funnel:", error.message);
@@ -151,8 +155,9 @@ router.put("/:id", async (req, res) => {
  * Habilita el acceso público al Video Funnel.
  */
 router.put("/:id/publish", async (req, res) => {
+  const subIdToUse = req.body.sub_id || req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     const pageData = {
       name: kfPage.name,
       url: kfPage.url,
@@ -162,7 +167,7 @@ router.put("/:id/publish", async (req, res) => {
       jsonData: kfPage.jsonData || {},
     };
 
-    await kiuflowService.updateWebpage(req.params.id, pageData);
+    await kiuflowService.updateWebpage(req.params.id, pageData, subIdToUse);
     res.json({ ok: true });
   } catch (error) {
     console.error("Error publicando funnel:", error.message);
@@ -175,8 +180,9 @@ router.put("/:id/publish", async (req, res) => {
  * Cambia el estado del Video Funnel a borrador (inaccesible públicamente).
  */
 router.put("/:id/unpublish", async (req, res) => {
+  const subIdToUse = req.body.sub_id || req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     const pageData = {
       name: kfPage.name,
       url: kfPage.url,
@@ -185,7 +191,7 @@ router.put("/:id/unpublish", async (req, res) => {
       origin: kfPage.origin || process.env.APP_ORIGIN || "KiuFlow",
       jsonData: kfPage.jsonData || {},
     };
-    await kiuflowService.updateWebpage(req.params.id, pageData);
+    await kiuflowService.updateWebpage(req.params.id, pageData, subIdToUse);
     res.json({ ok: true });
   } catch (error) {
     console.error("Error despublicando funnel:", error.message);
@@ -198,8 +204,9 @@ router.put("/:id/unpublish", async (req, res) => {
  * Elimina permanentemente el Video Funnel del repositorio.
  */
 router.delete("/:id", async (req, res) => {
+  const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   try {
-    await kiuflowService.deleteWebpage(req.params.id);
+    await kiuflowService.deleteWebpage(req.params.id, subIdToUse);
     res.json({ ok: true });
   } catch (error) {
     console.error("Error eliminando funnel:", error.message);
