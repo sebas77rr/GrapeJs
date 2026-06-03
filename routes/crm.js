@@ -5,7 +5,8 @@ const kiuflowService = require("../services/kiuflowService");
 // GET /api/crm/channels
 router.get("/channels", async (req, res) => {
   try {
-    const channels = await kiuflowService.getChannels();
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const channels = await kiuflowService.getChannels(subIdToUse);
     //console.log("CANALES RAW:", JSON.stringify(channels[0], null, 2));
     // solo canales WhatsApp
     const whatsappChannels = channels.filter(
@@ -21,11 +22,12 @@ router.get("/channels", async (req, res) => {
 // GET /api/crm/templates
 router.get("/templates", async (req, res) => {
   try {
-    const { channelId } = req.query;
+    const { channelId, sub_id } = req.query;
     if (!channelId) {
       return res.status(400).json({ error: "channelId es requerido" });
     }
-    const templates = await kiuflowService.getTemplates(channelId);
+    const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const templates = await kiuflowService.getTemplates(channelId, subIdToUse);
     //console.log("TEMPLATES RAW:", JSON.stringify(templates, null, 2));
     res.json({ templates });
   } catch (error) {
@@ -41,7 +43,8 @@ router.get("/files", async (req, res) => {
     const directoryId = req.query.directoryId
       ? Number(req.query.directoryId)
       : 85;
-    const filesResponse = await kiuflowService.getFiles(directoryId);
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const filesResponse = await kiuflowService.getFiles(directoryId, subIdToUse);
 
     const files = filesResponse.map((f) => ({
       ...f,
@@ -56,9 +59,10 @@ router.get("/files", async (req, res) => {
 
 router.get("/availability", async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, sub_id } = req.query;
     if (!date) return res.status(400).json({ error: "date es requerido" });
-    const slots = await kiuflowService.getAvailability(date);
+    const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const slots = await kiuflowService.getAvailability(date, subIdToUse);
     res.json({ slots });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -68,11 +72,12 @@ router.get("/availability", async (req, res) => {
 // POST /api/crm/appointment
 router.post("/appointment", async (req, res) => {
   try {
-    const { clientId, date, funnelId } = req.body;
+    const { clientId, date, funnelId, sub_id } = req.body;
     if (!clientId || !date)
       return res.status(400).json({ error: "clientId y date son requeridos" });
 
-    const agents = await kiuflowService.getAgents();
+    const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const agents = await kiuflowService.getAgents(subIdToUse);
     if (!agents || agents.length === 0)
       return res.status(400).json({ error: "No hay agentes disponibles" });
     const agentId = String(agents[0].id);
@@ -83,12 +88,12 @@ router.post("/appointment", async (req, res) => {
       date,
       confirmed: "true",
       attended: "false",
-    });
+    }, subIdToUse);
 
     // Crear Recordatorios de cita R2, R3, R4 según flujo definido
     if (funnelId) {
       try {
-        const funnel = await kiuflowService.getWebpage(funnelId);
+        const funnel = await kiuflowService.getWebpage(funnelId, subIdToUse);
         const reminders = funnel?.jsonData?.reminders || [];
         const citaDate = new Date(date);
         const ahora = new Date();
@@ -113,7 +118,7 @@ router.post("/appointment", async (req, res) => {
               templateId: rem.templateId || null,
               content: rem.content,
               remindAt,
-            });
+            }, subIdToUse);
           } catch (err) {
             console.error(`Error creando R${i + 2}:`, err.message);
           }
