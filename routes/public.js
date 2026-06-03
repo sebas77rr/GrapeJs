@@ -3,18 +3,41 @@ const router = express.Router();
 const kiuflowService = require("../services/kiuflowService");
 const { renderFunnelLanding, renderFunnelForm } = require("../funnel-renderer");
 
+/**
+ * Función auxiliar para buscar una página a través de todas las suscripciones
+ * disponibles para el administrador actual.
+ */
+async function findPageAcrossSubscriptions(fullPath, type) {
+  try {
+    const subs = await kiuflowService.getSuscriptions();
+    for (const sub of subs) {
+      const pages = await kiuflowService.listWebpages(sub.id);
+      const page = pages.find(
+        (p) => p.type === type && p.url && p.url.includes(fullPath)
+      );
+      if (page) {
+        return { page, subId: sub.id };
+      }
+    }
+  } catch (err) {
+    console.error("Error buscando página en suscripciones:", err);
+  }
+  return null;
+}
+
 // GET /p/* (Landing page tradicional)
 router.get("/p/*", async (req, res) => {
   try {
     const fullPath = req.originalUrl;
-    const pages = await kiuflowService.listWebpages();
-    const landing = pages.find(
-      (p) => p.type === "LANDING_PAGE" && p.url && p.url.includes(fullPath),
-    );
+    
+    // Buscar la landing en cualquier suscripción
+    const result = await findPageAcrossSubscriptions(fullPath, "LANDING_PAGE");
 
-    if (!landing) {
+    if (!result || !result.page) {
       return res.status(404).send("<h1>Landing Page no encontrada</h1>");
     }
+
+    const landing = result.page;
 
     /**
      * Interceptor de Estado:
@@ -58,14 +81,14 @@ router.get("/f/*", async (req, res, next) => {
 
   try {
     const fullPath = req.originalUrl;
-    const pages = await kiuflowService.listWebpages();
-    const funnelPage = pages.find(
-      (p) => p.type === "VIDEO_FUNNEL" && p.url && p.url.includes(fullPath),
-    );
+    
+    const result = await findPageAcrossSubscriptions(fullPath, "VIDEO_FUNNEL");
 
-    if (!funnelPage) {
+    if (!result || !result.page) {
       return res.status(404).send("<h1>Video Funnel no encontrado</h1>");
     }
+
+    const funnelPage = result.page;
 
     /**
      * Interceptor de Estado:
@@ -100,14 +123,14 @@ router.get("/f/*", async (req, res, next) => {
 router.get("/f/*/form", async (req, res) => {
   try {
     const basePath = req.originalUrl.replace("/form", "");
-    const pages = await kiuflowService.listWebpages();
-    const funnelPage = pages.find(
-      (p) => p.type === "VIDEO_FUNNEL" && p.url && p.url.includes(basePath),
-    );
+    
+    const result = await findPageAcrossSubscriptions(basePath, "VIDEO_FUNNEL");
 
-    if (!funnelPage) {
+    if (!result || !result.page) {
       return res.status(404).send("<h1>Formulario no encontrado</h1>");
     }
+
+    const funnelPage = result.page;
 
     const funnel = {
       id: funnelPage.id,
@@ -128,3 +151,4 @@ router.get("/f/*/form", async (req, res) => {
 });
 
 module.exports = router;
+

@@ -96,14 +96,13 @@ router.post("/", async (req, res) => {
     const pageData = {
       name: name,
       url: finalUrl,
-      published: true,
+      published: "true",
       type: "LANDING_PAGE",
       origin: process.env.APP_ORIGIN || "KiuFlow",
       jsonData: {
         gjs_html: "",
         gjs_css: "",
-        gjs_components: null,
-        template_id: template_id || null
+        template_id: template_id || ""
       }
     };
 
