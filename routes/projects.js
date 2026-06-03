@@ -38,10 +38,11 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/projects/:id?client_id=X
+// GET /api/projects/:id
 router.get("/:id", async (req, res) => {
   try {
-    const kfPage = await kiuflowService.getWebpage(req.params.id);
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     if (!kfPage) return res.status(404).json({ error: "Proyecto no encontrado" });
 
     const project = {
