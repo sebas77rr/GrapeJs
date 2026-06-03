@@ -51,8 +51,24 @@ router.post("/:funnelId/leads", async (req, res) => {
       clientData.channelId = funnel.jsonData.defaultChannelId;
     }
 
-    const newClient = await kiuflowService.createClient(clientData, subIdToUse);
-    const clientId = newClient.id;
+    let clientId;
+    try {
+      const newClient = await kiuflowService.createClient(clientData, subIdToUse);
+      clientId = newClient.id;
+    } catch (err) {
+      console.warn("Posible cliente duplicado detectado. Buscando cliente existente...", err.message);
+      const clients = await kiuflowService.getClients(subIdToUse);
+      const existingClient = clients.find(c => 
+        (phone && c.phone === phone) || (email && c.email === email)
+      );
+      
+      if (existingClient) {
+        clientId = existingClient.id;
+        console.log("Cliente existente encontrado. Continuando flujo con ID:", clientId);
+      } else {
+        throw err; // Si no es duplicado o no se encuentra, lanzar error original
+      }
+    }
 
     /**
      * Paso 3: Disparador de Automatizaciones
