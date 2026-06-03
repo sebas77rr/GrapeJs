@@ -654,6 +654,7 @@ function renderFunnelForm(funnel) {
   <script>
   (function() {
     var FUNNEL_ID = '${funnel.id}';
+    var SUB_ID = '${funnel.sub_id || ""}';
     var FIELDS = ${JSON.stringify(parsedFields)};
     var COLORS = ['#7c3aed','#a78bfa','#34d399','#f59e0b','#ec4899','#3b82f6'];
     var clientId = null;
@@ -758,7 +759,7 @@ function renderFunnelForm(funnel) {
     function loadSlots(dateStr) {
       var container = document.getElementById('slotsContainer');
       container.innerHTML = '<div class="slots-loading"><div class="spinner"></div>Cargando horarios...</div>';
-      fetch('/api/crm/availability?date=' + dateStr)
+      fetch('/api/crm/availability?date=' + dateStr + '&sub_id=' + SUB_ID)
         .then(function(r) { return r.json(); })
         .then(function(data) {
           var slots = data.slots || [];
@@ -849,7 +850,8 @@ function renderFunnelForm(funnel) {
         body: JSON.stringify({ 
           clientId: clientId, 
           date: selectedSlot.startDate,
-          funnelId: FUNNEL_ID
+          funnelId: FUNNEL_ID,
+          sub_id: SUB_ID
         })
       })
       .then(function(r) { return r.json(); })
@@ -891,7 +893,7 @@ function renderFunnelForm(funnel) {
       fetch('/api/funnels/' + FUNNEL_ID + '/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: data })
+        body: JSON.stringify({ data: data, sub_id: SUB_ID })
       })
       .then(function(r) {
         if (!r.ok) return r.json().then(function(b) { throw new Error(b.error || 'Error al enviar'); });

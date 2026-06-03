@@ -92,6 +92,7 @@ router.get("/f/*", async (req, res, next) => {
 
     const funnel = {
       id: funnelPage.id,
+      sub_id: result.subId,
       title: funnelPage.name,
       public_slug:
         funnelPage.url && funnelPage.url.includes("/f/")
@@ -123,6 +124,7 @@ router.get("/f/*/form", async (req, res) => {
 
     const funnel = {
       id: funnelPage.id,
+      sub_id: result.subId,
       title: funnelPage.name,
       public_slug:
         funnelPage.url && funnelPage.url.includes("/f/")
