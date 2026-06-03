@@ -24,6 +24,10 @@ router.post("/:funnelId/leads", async (req, res) => {
      * Separa los campos estándar (nombre, email, teléfono) de cualquier
      * campo adicional enviado por el formulario, almacenándolos en 'customFields'.
      */
+    const name = data.nombre || data.name || '';
+    const phone = data.telefono || data.phone || '';
+    const email = data.email || data.correo || '';
+
     const customFields = { leadSource: funnelId };
     for (const key in data) {
       if (!['nombre','name','telefono','phone','email','correo'].includes(key)) {
