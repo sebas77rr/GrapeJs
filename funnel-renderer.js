@@ -879,14 +879,26 @@ function renderFunnelForm(funnel) {
       errorBox.classList.remove('show');
       var data = {};
       var missing = [];
+      var invalidEmails = [];
       FIELDS.forEach(function(f) {
         var el = document.getElementById('field_' + f.name);
         var val = el ? el.value.trim() : '';
         data[f.name] = val;
-        if (f.required && !val) missing.push(f.label);
+        if (f.required && !val) {
+          missing.push(f.label);
+        } else if (val && (f.type === 'email' || f.name.includes('correo') || f.name.includes('email'))) {
+          // Validar que tenga formato de correo básico
+          if (val.indexOf('@') === -1 || val.indexOf('.') === -1) {
+            invalidEmails.push(f.label);
+          }
+        }
       });
       if (missing.length > 0) {
-        errorBox.textContent = 'Completa los campos: ' + missing.join(', ');
+        errorBox.textContent = 'Completa los campos requeridos: ' + missing.join(', ');
+        errorBox.classList.add('show'); return;
+      }
+      if (invalidEmails.length > 0) {
+        errorBox.textContent = 'Ingresa un correo electrónico válido (con @) en: ' + invalidEmails.join(', ');
         errorBox.classList.add('show'); return;
       }
       submitBtn.disabled = true; submitBtn.textContent = 'Enviando...';
