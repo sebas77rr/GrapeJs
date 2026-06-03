@@ -88,11 +88,7 @@ router.post("/", async (req, res) => {
     const identifier = Date.now().toString(36);
     const finalUrl = `${domain}/p/${identifier}/${safeName}`;
 
-    /**
-     * Ensamblado del Payload (WebPage):
-     * KiuFlow requiere el campo 'origin' para la métrica,
-     * y empaqueta la metadata (html, css) dentro del nodo jsonData.
-     */
+
     const pageData = {
       name: name,
       url: finalUrl,
@@ -150,18 +146,11 @@ router.put("/:id", async (req, res) => {
   const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
   
   try {
-    /**
-     * Preservación del Estado:
-     * Obtenemos la versión actual desde KiuFlow antes de actualizar 
-     * para no sobreescribir la URL ni las configuraciones ajenas a GrapesJS.
-     */
+
     const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
     if (!kfPage) return res.status(404).json({ error: "Proyecto no encontrado en KiuFlow" });
 
-    /**
-     * Payload de Actualización Parcial:
-     * Merge del JSONData existente con los nuevos componentes, HTML y CSS.
-     */
+
     const pageData = {
       name: name || kfPage.name,
       url: kfPage.url,

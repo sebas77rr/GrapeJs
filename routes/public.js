@@ -39,11 +39,7 @@ router.get("/p/*", async (req, res) => {
 
     const landing = result.page;
 
-    /**
-     * Interceptor de Estado:
-     * Si la Landing Page no está explícitamente marcada como publicada (true/"true"),
-     * se bloquea el acceso devolviendo un error 403 (Prohibido).
-     */
+
     if (landing.published !== true && landing.published !== "true") {
       return res
         .status(403)
@@ -73,10 +69,7 @@ router.get("/p/*", async (req, res) => {
 
 // GET /f/* (Video Funnel Landing)
 router.get("/f/*", async (req, res, next) => {
-  /**
-   * Bypass para el iFrame del formulario.
-   * Evita colisiones de rutas al interceptar /f/*
-   */
+
   if (req.originalUrl.endsWith("/form")) return next();
 
   try {
@@ -90,11 +83,7 @@ router.get("/f/*", async (req, res, next) => {
 
     const funnelPage = result.page;
 
-    /**
-     * Interceptor de Estado:
-     * Valida que el embudo se encuentre en estado publicado antes de
-     * invocar al motor de renderizado SSR de Funnels.
-     */
+
     if (funnelPage.published !== true && funnelPage.published !== "true") {
       return res
         .status(403)
