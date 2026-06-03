@@ -165,7 +165,7 @@ router.put("/:id", async (req, res) => {
     const pageData = {
       name: name || kfPage.name,
       url: kfPage.url,
-      published: true,
+      published: "true",
       type: "LANDING_PAGE",
       origin: process.env.APP_ORIGIN || "KiuFlow",
       jsonData: {
