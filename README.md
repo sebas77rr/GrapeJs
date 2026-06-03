@@ -1,6 +1,6 @@
 # Backend: KiuFlow Builder (API & Renderer)
 
-Este es el servidor Node.js que impulsa el **Constructor de Landings y Video Funnels** para la plataforma KiuFlow. 
+Node.js impulsa **Constructor de Landings y Video Funnels**. 
 
 ## 🛠️ Stack Tecnológico
 - **Entorno:** Node.js

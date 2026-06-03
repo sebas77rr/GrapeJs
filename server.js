@@ -11,6 +11,38 @@ app.use(cors({ origin: /^http:\/\/localhost(:\d+)?$/ }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// ─────────────────────────────────────────────
+// Endpoints de autenticación SSO
+// ─────────────────────────────────────────────
+
+/**
+ * POST /api/auth/set-token
+ * El frontend llama a este endpoint al recibir el token de KiuFlow via URL param.
+ * Almacena el JWT del usuario y lo usa para todas las llamadas a la API de KiuFlow.
+ */
+app.post("/api/auth/set-token", (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: "Token requerido" });
+  
+  try {
+    const { setExternalToken } = require("./services/kiuflowAuth");
+    setExternalToken(token);
+    res.json({ ok: true, message: "Token registrado correctamente" });
+  } catch (e) {
+    res.status(500).json({ error: "Error al registrar token" });
+  }
+});
+
+/**
+ * POST /api/auth/logout
+ * Limpia el token externo (cuando el usuario cierra sesión en KiuFlow)
+ */
+app.post("/api/auth/logout", (req, res) => {
+  const { clearExternalToken } = require("./services/kiuflowAuth");
+  clearExternalToken();
+  res.json({ ok: true });
+});
+
 // Rutas
 app.use("/api/clients", require("./routes/clients"));
 app.use("/api/projects", require("./routes/projects"));

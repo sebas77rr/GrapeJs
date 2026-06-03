@@ -227,7 +227,6 @@ function renderFunnelLanding(funnel) {
       </a>
     </div>
   </div>
-  <div class="badge">⚡ Powered by KiuFlow</div>
   <script>
     (function() {
       var THRESHOLD = ${threshold};
@@ -651,8 +650,6 @@ function renderFunnelForm(funnel) {
       </div>
     </div>
   </div>
-
-  <div class="badge">⚡ Powered by KiuFlow</div>
 
   <script>
   (function() {

@@ -6,7 +6,11 @@ const kiuflowService = require("../services/kiuflowService");
 // GET /api/projects?client_id=X
 router.get("/", async (req, res) => {
   try {
-    const kfPages = await kiuflowService.listWebpages();
+    const subId = req.query.sub_id && req.query.sub_id !== "undefined"
+      ? req.query.sub_id
+      : process.env.KIUFLOW_SUBSCRIPTION_ID;
+
+    const kfPages = await kiuflowService.listWebpages(subId);
     
     /**
      * Filtrar los registros traídos del backend para aislar
@@ -19,7 +23,7 @@ router.get("/", async (req, res) => {
       name: p.name || "Sin Nombre",
       client_id: "kiuflow_user",
       template_id: null,
-      created_at: new Date().toISOString(), // Usamos la actual si KF no la da
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       json_data: p.jsonData || null,
       html: p.jsonData?.gjs_html || "",
@@ -27,7 +31,7 @@ router.get("/", async (req, res) => {
       url: p.url || ""
     }));
 
-    res.json({ projects, used: projects.length, max: 999 }); // Max infinito por ahora o traído del token
+    res.json({ projects, used: projects.length, max: 999 });
   } catch (error) {
     console.error("Error obteniendo proyectos de KiuFlow:", error.message);
     res.status(500).json({ error: "Error conectando con KiuFlow" });
@@ -78,7 +82,7 @@ router.post("/", async (req, res) => {
 
     const safeName = name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'landing';
     const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
-    const identifier = Date.now().toString(36); // Identificador único corto (ej: 'lqw2x')
+    const identifier = Date.now().toString(36);
     const finalUrl = `${domain}/p/${identifier}/${safeName}`;
 
     /**
@@ -89,7 +93,7 @@ router.post("/", async (req, res) => {
     const pageData = {
       name: name,
       url: finalUrl,
-      published: "false",
+      published: true,
       type: "LANDING_PAGE",
       origin: process.env.APP_ORIGIN || "KiuFlow",
       jsonData: {
@@ -157,7 +161,7 @@ router.put("/:id", async (req, res) => {
     const pageData = {
       name: name || kfPage.name,
       url: kfPage.url,
-      published: kfPage.published,
+      published: true,
       type: "LANDING_PAGE",
       origin: process.env.APP_ORIGIN || "KiuFlow",
       jsonData: {

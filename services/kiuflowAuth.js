@@ -9,8 +9,52 @@ let cachedToken = null;
 let tokenExpirationTime = null;
 let cachedUserInfo = null;
 
+// ─────────────────────────────────────────────
+// Token externo (pasado por el usuario desde KiuFlow via URL)
+// Cuando KiuFlow abra el builder con ?token=xxx, este se setea aquí
+// y tiene prioridad sobre el token del .env
+// ─────────────────────────────────────────────
+let externalToken = null;
+let externalTokenExpiry = null;
+
 /**
- * Realiza el login contra KiuFlow y almacena el JWT
+ * Recibe el JWT del usuario autenticado en KiuFlow (SSO)
+ * Se llama desde el endpoint /api/auth/set-token
+ */
+function setExternalToken(jwt) {
+  externalToken = jwt;
+  try {
+    const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
+    // Expira 5 minutos antes de su tiempo real
+    externalTokenExpiry = payload.exp
+      ? (payload.exp * 1000) - (5 * 60 * 1000)
+      : Date.now() + (8 * 60 * 60 * 1000); // fallback 8h
+    
+    cachedUserInfo = {
+      id: payload.userId || payload.sub || null,
+      name: payload.name || payload.userName || payload.username || null,
+      email: payload.email || null
+    };
+    console.log('[Auth] Token externo de KiuFlow recibido. Usuario:', cachedUserInfo?.name || 'desconocido');
+  } catch (e) {
+    externalTokenExpiry = Date.now() + (8 * 60 * 60 * 1000);
+    console.log('[Auth] Token externo recibido (sin payload decodificable)');
+  }
+}
+
+function clearExternalToken() {
+  externalToken = null;
+  externalTokenExpiry = null;
+  cachedUserInfo = null;
+  console.log('[Auth] Token externo eliminado');
+}
+
+function isExternalTokenValid() {
+  return externalToken && externalTokenExpiry && Date.now() < externalTokenExpiry;
+}
+
+/**
+ * Realiza el login contra KiuFlow con credenciales del .env (fallback de desarrollo)
  */
 async function login() {
   try {
@@ -31,14 +75,9 @@ async function login() {
           email: payload.email || null
         };
 
-        /**
-         * Invalidación de token.
-         * Se extrae el tiempo de expiración real del token (exp) y se resta un 
-         * margen de seguridad de 5 minutos para renovarlo preventivamente.
-         */
         tokenExpirationTime = payload.exp
           ? (payload.exp * 1000) - (5 * 60 * 1000)
-          : Date.now() + (24 * 60 * 60 * 1000); // fallback a 24h
+          : Date.now() + (24 * 60 * 60 * 1000);
 
       } catch (e) {
         cachedUserInfo = response.data.data.user || { name: null };
@@ -50,20 +89,34 @@ async function login() {
       throw new Error("Respuesta de login no contiene JWT");
     }
   } catch (error) {
-    console.error("Error en kiuflowAuth.login:", error.message);
+    console.error("[Auth] Error en login con credenciales .env:", error.message);
     throw error;
   }
 }
 
 /**
- * Obtiene el token actual o hace login si ha expirado
+ * Retorna el token válido.
+ * PRIORIDAD: 1) Token externo del usuario (SSO desde KiuFlow) 
+ *            2) Token del .env (fallback para desarrollo)
  */
 async function getValidToken() {
-  if (!cachedToken || !tokenExpirationTime || Date.now() > tokenExpirationTime) {
-    console.log("Renovando token JWT de KiuFlow...");
-    await login();
+  // Prioridad 1: token del usuario real pasado desde KiuFlow
+  if (isExternalTokenValid()) {
+    return externalToken;
   }
-  return cachedToken;
+
+  // Prioridad 2: token del .env (modo desarrollo/fallback)
+  const USE_ENV_FALLBACK = false; 
+
+  if (USE_ENV_FALLBACK) {
+    if (!cachedToken || !tokenExpirationTime || Date.now() > tokenExpirationTime) {
+      console.log("[Auth] Usando credenciales del .env (modo fallback)...");
+      await login();
+    }
+    return cachedToken;
+  }
+
+  throw new Error("No hay token de sesión activo. Usuario no autenticado.");
 }
 
 function getUserInfo() {
@@ -73,5 +126,8 @@ function getUserInfo() {
 module.exports = {
   getValidToken,
   login,
+  setExternalToken,
+  clearExternalToken,
+  isExternalTokenValid,
   getUserInfo
 };
