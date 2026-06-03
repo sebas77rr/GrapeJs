@@ -7,7 +7,7 @@ const app = express();
 const PORT = 3001;
 
 // Middlewares básicos
-app.use(cors({ origin: /^http:\/\/localhost(:\d+)?$/ }));
+app.use(cors()); // Permitir todos los orígenes para no bloquear peticiones desde el frontend en producción
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
