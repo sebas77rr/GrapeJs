@@ -38,7 +38,6 @@ router.get("/api/public/appointment", async (req, res) => {
       return res.status(404).json({ error: "No se encontraron citas" });
     }
 
-    // Filtrar citas futuras del cliente específico
     const now = new Date();
     const clientAppointments = appointments
       .filter((a) => a.client && a.client.id === parseInt(client_id, 10))
@@ -51,7 +50,6 @@ router.get("/api/public/appointment", async (req, res) => {
 
     const nextAppt = clientAppointments[0];
     
-    // Devolver sólo datos seguros y útiles para la vista pública
     res.json({
       ok: true,
       appointment: {
