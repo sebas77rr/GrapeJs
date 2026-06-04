@@ -81,8 +81,7 @@ function renderFunnelLanding(funnel) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
-  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+
   <style>
     :root {
       --accent: ${funnel.cta_color || '#6366f1'};
@@ -315,10 +314,22 @@ function renderFunnelForm(funnel) {
         </div>`;
     }
     const isPhone = f.type === 'tel' || f.name.toLowerCase().includes('telefono') || f.name.toLowerCase().includes('phone');
-    const typeAttr = isPhone ? 'tel' : (f.type || 'text');
+    if (isPhone) {
+      return `<div class="form-group">
+        <label for="field_${f.name}">${escapeHtml(f.label)} ${requiredStar}</label>
+        <div class="phone-wrapper">
+          <select id="field_${f.name}_code" name="${escapeHtml(f.name)}_code">
+            <option value="" disabled selected>Indicativo</option>
+            <option value="+57">🇨🇴 Colombia (+57)</option>
+            <option value="+52">🇲🇽 México (+52)</option>
+          </select>
+          <input type="tel" id="field_${f.name}" name="${escapeHtml(f.name)}" placeholder="Número sin indicativo" ${required} />
+        </div>
+      </div>`;
+    }
     return `<div class="form-group">
         <label for="field_${f.name}">${escapeHtml(f.label)} ${requiredStar}</label>
-        <input type="${typeAttr}" id="field_${f.name}" name="${escapeHtml(f.name)}" placeholder="${escapeHtml(f.label)}" ${required} />
+        <input type="${f.type || 'text'}" id="field_${f.name}" name="${escapeHtml(f.name)}" placeholder="${escapeHtml(f.label)}" ${required} />
       </div>`;
   }).join("\n");
 
@@ -420,12 +431,22 @@ function renderFunnelForm(funnel) {
     }
     .form-group textarea { resize: vertical; min-height: 80px; }
 
-    /* ── INTL TEL INPUT ── */
-    .iti { width: 100%; display: block; }
-    .iti__country-list { background: rgba(255,255,255,0.98); color: #0f172a; border-radius: 12px; border: none; padding: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: 'DM Sans', sans-serif; }
-    .iti__country { border-radius: 6px; margin-bottom: 2px; transition: background 0.2s; }
-    .iti__country.iti__highlight { background: rgba(99,102,241,0.1); }
-    .iti__selected-dial-code { color: #0f172a; font-weight: 600; font-size: 0.95rem; font-family: 'DM Sans', sans-serif; }
+    /* ── PHONE FIELD ── */
+    .phone-wrapper { display: flex; gap: 8px; }
+    .phone-wrapper select {
+      flex-shrink: 0; width: auto; min-width: 140px;
+      background: #fff; color: #0f172a;
+      border: 2px solid rgba(15,23,42,0.12);
+      border-radius: 12px; padding: 12px 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.92rem; font-weight: 600;
+      cursor: pointer; outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      padding-right: 28px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .phone-wrapper select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .phone-wrapper input[type="tel"] { flex: 1; }
 
     /* ── BUTTONS ── */
     .btn-primary {
@@ -694,18 +715,7 @@ function renderFunnelForm(funnel) {
     var dot2 = document.getElementById('dot2');
     var dot3 = document.getElementById('dot3');
 
-    // ── Intl Tel Input Setup ──
-    var itis = [];
-    var phoneInputs = document.querySelectorAll('input[type="tel"]');
-    phoneInputs.forEach(function(input) {
-      var iti = window.intlTelInput(input, {
-        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
-        initialCountry: "co",
-        preferredCountries: ["co", "mx", "ar", "es", "us", "pe", "cl"],
-        separateDialCode: true,
-      });
-      itis.push({ input: input, iti: iti });
-    });
+
 
     // ── Init calendar with current month ──
     var now = new Date();
@@ -935,10 +945,11 @@ function renderFunnelForm(funnel) {
 
         var isPhone = f.type === 'tel' || f.name.toLowerCase().includes('telefono') || f.name.toLowerCase().includes('phone');
         if (isPhone && val) {
-          var itiObj = itis.find(function(i) { return i.input === el; });
-          if (itiObj) {
-            val = itiObj.iti.getNumber(); // Gets full international number like +573005925026
-          }
+          var codeEl = document.getElementById('field_' + f.name + '_code');
+          var code = codeEl ? codeEl.value : '';
+          // Concatenar indicativo + número, limpiando espacios y el + del número si ya lo tiene
+          var rawNum = val.replace(/\D/g, '');
+          val = code ? code.replace('+','') + rawNum : rawNum;
         }
 
         data[f.name] = val;
