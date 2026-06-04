@@ -98,7 +98,9 @@ function renderFunnelLanding(funnel) {
     html { scroll-behavior: smooth; }
     body {
       font-family: 'DM Sans', sans-serif;
-      background: var(--bg-color);
+      ${funnel.bg_image 
+        ? `background: url('${funnel.bg_image}') no-repeat center center fixed; background-size: cover;` 
+        : `background: var(--bg-color);`}
       min-height: 100vh;
       color: var(--text-color);
       overflow-x: hidden;
