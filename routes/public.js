@@ -67,10 +67,8 @@ router.get("/p/*", async (req, res) => {
   }
 });
 
-// GET /f/* (Video Funnel Landing)
-router.get("/f/*", async (req, res, next) => {
-
-  if (req.originalUrl.endsWith("/form")) return next();
+// GET /f/* (Video Funnel Landing) - excluye rutas que terminan en /form
+router.get(/^\/f\/(?!.*\/form$).+/, async (req, res) => {
 
   try {
     const fullPath = req.originalUrl;
@@ -109,8 +107,8 @@ router.get("/f/*", async (req, res, next) => {
   }
 });
 
-// GET /f/*/form (Formulario del Funnel incrustado)
-router.get("/f/*/form", async (req, res) => {
+// GET /f/**/form (Formulario del Funnel - maneja slugs con múltiples segmentos)
+router.get(/^\/f\/.+\/form$/, async (req, res) => {
   try {
     const basePath = req.originalUrl.replace("/form", "");
     
