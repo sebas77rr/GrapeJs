@@ -73,14 +73,16 @@ function renderFunnelLanding(funnel) {
       });`;
   }
 
-  return `<!DOCTYPE html>
-<html lang="es">
+  return `<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(funnel.title)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
   <style>
     :root {
       --accent: ${funnel.cta_color || '#6366f1'};
@@ -312,9 +314,11 @@ function renderFunnelForm(funnel) {
           </select>
         </div>`;
     }
+    const isPhone = f.type === 'tel' || f.name.toLowerCase().includes('telefono') || f.name.toLowerCase().includes('phone');
+    const typeAttr = isPhone ? 'tel' : (f.type || 'text');
     return `<div class="form-group">
         <label for="field_${f.name}">${escapeHtml(f.label)} ${requiredStar}</label>
-        <input type="${f.type || 'text'}" id="field_${f.name}" name="${escapeHtml(f.name)}" placeholder="${escapeHtml(f.label)}" ${required} />
+        <input type="${typeAttr}" id="field_${f.name}" name="${escapeHtml(f.name)}" placeholder="${escapeHtml(f.label)}" ${required} />
       </div>`;
   }).join("\n");
 
@@ -415,6 +419,13 @@ function renderFunnelForm(funnel) {
       box-shadow: 0 0 0 3px var(--accent-glow);
     }
     .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* ── INTL TEL INPUT ── */
+    .iti { width: 100%; display: block; }
+    .iti__country-list { background: rgba(255,255,255,0.98); color: #0f172a; border-radius: 12px; border: none; padding: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: 'DM Sans', sans-serif; }
+    .iti__country { border-radius: 6px; margin-bottom: 2px; transition: background 0.2s; }
+    .iti__country.iti__highlight { background: rgba(99,102,241,0.1); }
+    .iti__selected-dial-code { color: #0f172a; font-weight: 600; font-size: 0.95rem; font-family: 'DM Sans', sans-serif; }
 
     /* ── BUTTONS ── */
     .btn-primary {
@@ -683,6 +694,19 @@ function renderFunnelForm(funnel) {
     var dot2 = document.getElementById('dot2');
     var dot3 = document.getElementById('dot3');
 
+    // ── Intl Tel Input Setup ──
+    var itis = [];
+    var phoneInputs = document.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach(function(input) {
+      var iti = window.intlTelInput(input, {
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+        initialCountry: "co",
+        preferredCountries: ["co", "mx", "ar", "es", "us", "pe", "cl"],
+        separateDialCode: true,
+      });
+      itis.push({ input: input, iti: iti });
+    });
+
     // ── Init calendar with current month ──
     var now = new Date();
     currentYear = now.getFullYear();
@@ -908,6 +932,15 @@ function renderFunnelForm(funnel) {
       FIELDS.forEach(function(f) {
         var el = document.getElementById('field_' + f.name);
         var val = el ? el.value.trim() : '';
+
+        var isPhone = f.type === 'tel' || f.name.toLowerCase().includes('telefono') || f.name.toLowerCase().includes('phone');
+        if (isPhone && val) {
+          var itiObj = itis.find(function(i) { return i.input === el; });
+          if (itiObj) {
+            val = itiObj.iti.getNumber(); // Gets full international number like +573005925026
+          }
+        }
+
         data[f.name] = val;
         if (f.required && !val) {
           missing.push(f.label);
