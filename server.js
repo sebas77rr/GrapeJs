@@ -133,6 +133,23 @@ app.get("/api/kiuflow/subscriptions", async (req, res) => {
   }
 });
 
+app.get("/api/kiuflow/user-settings", async (req, res) => {
+  try {
+    const { getValidToken } = require("./services/kiuflowAuth");
+    const axios = require("axios");
+    const token = await getValidToken();
+    const apiUrl = process.env.KIUFLOW_API_URL?.replace(/\/api\/v1\/?$/, "") || "https://apiengine.kiuflow.online";
+    const response = await axios.post(`${apiUrl}/api/v1/user/settings`, {}, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    });
+    const data = response.data?.data || {};
+    res.json(data);
+  } catch (error) {
+    res.json({ theme_colorTheme: "pink" });
+  }
+});
+
+
 /**
  * Catch-all Handler (Single Page Application fallback)
  * Redirige cualquier petición no capturada hacia la app de React estática.
