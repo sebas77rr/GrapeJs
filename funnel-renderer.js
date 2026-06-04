@@ -90,15 +90,21 @@ function renderFunnelLanding(funnel) {
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
+      --accent: ${funnel.cta_color || '#DB2C52'};
+      --accent2: ${funnel.cta_color || '#DB2C52'};
+      --accent-glow: ${funnel.cta_color ? funnel.cta_color + '40' : 'rgba(219,44,82,0.25)'};
+      --bg-color: ${funnel.bg_color || '#0f172a'};
+      --text-color: ${funnel.text_color || '#ffffff'};
+      --success: #10b981;
+      --border: rgba(255,255,255,0.1);
+      --text-muted: rgba(255,255,255,0.6);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'DM Sans', sans-serif;
-      ${funnel.bg_image
-        ? `background: url('${funnel.bg_image}') no-repeat center center fixed; background-size: cover;`
-        : funnel.bg_color
-          ? `background: ${funnel.bg_color};`
-          : `background: radial-gradient(ellipse at 20% 50%, #0f0c29 0%, #302b63 50%, #24243e 100%);`}
+      background: var(--bg-color);
       min-height: 100vh;
-      color: #fff;
+      color: var(--text-color);
       overflow-x: hidden;
     }
     body::before {
@@ -127,14 +133,14 @@ function renderFunnelLanding(funnel) {
       font-size: clamp(2rem, 5.5vw, 3.2rem);
       font-weight: 800; text-align: center; line-height: 1.12;
       margin-bottom: 16px; letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #fff 0%, #e0e7ff 45%, #c4b5fd 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      ${funnel.text_color ? `color: var(--text-color);` : `background: linear-gradient(135deg, #fff 0%, #e0e7ff 45%, #c4b5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;`}
       opacity: 0; animation: fadeUp 0.7s ease-out 0.2s forwards;
     }
     .highlight {
       font-size: clamp(0.95rem, 2.2vw, 1.15rem);
       text-align: center; margin-bottom: 40px; max-width: 580px;
-      line-height: 1.65; font-weight: 500; color: rgba(255,255,255,0.6);
+      line-height: 1.65; font-weight: 500; 
+      color: ${funnel.text_color ? `var(--text-color)` : `rgba(255,255,255,0.6)`};
       opacity: 0; animation: fadeUp 0.8s ease-out 0.3s forwards;
     }
     .video-card {
@@ -384,29 +390,29 @@ function renderFunnelForm(funnel) {
     .view-title {
       font-family: 'Sora', sans-serif; font-size: 1.55rem; font-weight: 800;
       line-height: 1.2; margin-bottom: 6px;
-      background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      ${funnel.text_color ? `color: var(--text-color);` : `background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;`}
     }
     .view-sub { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
 
     /* ── FORM FIELDS ── */
     .form-group { margin-bottom: 18px; }
     .form-group label {
-      display: block; font-size: 0.8rem; font-weight: 600;
-      color: rgba(255,255,255,0.6); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase;
+      display: block; font-size: 0.8rem; font-weight: 700;
+      color: ${funnel.text_color ? `var(--text-color)` : `rgba(255,255,255,0.95)`}; margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase;
     }
     .req { color: #f87171; margin-left: 2px; }
     .form-group input, .form-group textarea, .form-group select {
       width: 100%; padding: 13px 16px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px; color: #fff; font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem; font-weight: 500; outline: none; transition: all 0.25s ease;
+      background: rgba(255,255,255,0.92); border: 2px solid transparent;
+      border-radius: 12px; color: #0f172a; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; outline: none; transition: all 0.25s ease;
     }
-    .form-group select option { background: #1e293b; color: #fff; }
-    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.2); }
+    .form-group select option { background: #fff; color: #0f172a; }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(15,23,42,0.4); font-weight: 500; }
     .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
-      border-color: rgba(99,102,241,0.6); background: rgba(255,255,255,0.07);
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+      background: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
     }
     .form-group textarea { resize: vertical; min-height: 80px; }
 
