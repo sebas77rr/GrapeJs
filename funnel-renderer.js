@@ -150,7 +150,8 @@ function renderFunnelLanding(funnel) {
       opacity: 0; animation: fadeUp 0.9s ease-out 0.4s forwards;
     }
     .video-wrapper {
-      position: relative; width: 100%; padding-bottom: 56.25%;
+      position: relative; width: 100%; 
+      ${funnel.video_orientation === 'portrait' ? `max-width: 400px; margin: 0 auto; padding-bottom: 177.78%;` : `padding-bottom: 56.25%;`}
       border-radius: 14px; overflow: hidden; background: #000;
     }
     .video-wrapper iframe, .video-wrapper video {
