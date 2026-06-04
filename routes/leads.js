@@ -25,8 +25,15 @@ router.post("/:funnelId/leads", async (req, res) => {
      * campo adicional enviado por el formulario, almacenándolos en 'customFields'.
      */
     const name = data.nombre || data.name || '';
-    const phone = data.telefono || data.phone || '';
+    let phone = data.telefono || data.phone || '';
     const email = data.email || data.correo || '';
+
+    // Limpiar caracteres no numéricos del teléfono
+    phone = phone.replace(/\D/g, '');
+    // Si es un número celular colombiano de 10 dígitos sin prefijo, auto-completar el 57
+    if (phone.length === 10 && phone.startsWith('3')) {
+      phone = '57' + phone;
+    }
 
     const customFields = { leadSource: funnelId };
     for (const key in data) {
