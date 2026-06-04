@@ -85,22 +85,17 @@ function renderFunnelLanding(funnel) {
   <style>
     :root {
       --accent: ${funnel.cta_color || '#6366f1'};
-      --accent2: #a78bfa;
-      --glass: rgba(255,255,255,0.04);
-      --border: rgba(255,255,255,0.09);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-      --accent: ${funnel.cta_color || '#DB2C52'};
-      --accent2: ${funnel.cta_color || '#DB2C52'};
-      --accent-glow: ${funnel.cta_color ? funnel.cta_color + '40' : 'rgba(219,44,82,0.25)'};
+      --accent2: ${funnel.cta_color || '#a78bfa'};
+      --accent-glow: ${funnel.cta_color ? funnel.cta_color + '40' : 'rgba(99,102,241,0.25)'};
       --bg-color: ${funnel.bg_color || '#0f172a'};
       --text-color: ${funnel.text_color || '#ffffff'};
       --success: #10b981;
+      --glass: rgba(255,255,255,0.04);
       --border: rgba(255,255,255,0.1);
       --text-muted: rgba(255,255,255,0.6);
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--bg-color);
@@ -714,9 +709,6 @@ function renderFunnelForm(funnel) {
     var dot1 = document.getElementById('dot1');
     var dot2 = document.getElementById('dot2');
     var dot3 = document.getElementById('dot3');
-
-
-
     // ── Init calendar with current month ──
     var now = new Date();
     currentYear = now.getFullYear();
