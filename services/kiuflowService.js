@@ -167,8 +167,9 @@ const kiuflowService = {
   },
 
   getAppointments: async (suscriptionId = SUB_ID) => {
-    return get(
-      `/api/v1/suscription/${suscriptionId}/appointment/list`
+    return post(
+      `/api/v1/suscription/${suscriptionId}/appointment/list`,
+      {}
     );
   },
 
