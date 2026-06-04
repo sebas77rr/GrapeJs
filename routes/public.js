@@ -25,6 +25,52 @@ async function findPageAcrossSubscriptions(fullPath, type) {
   return null;
 }
 
+// GET /api/public/appointment
+router.get("/api/public/appointment", async (req, res) => {
+  try {
+    const { client_id, sub_id } = req.query;
+    if (!client_id || !sub_id) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos" });
+    }
+
+    const appointments = await kiuflowService.getAppointments(sub_id);
+    if (!appointments || appointments.length === 0) {
+      return res.status(404).json({ error: "No se encontraron citas" });
+    }
+
+    // Filtrar citas futuras del cliente específico
+    const now = new Date();
+    const clientAppointments = appointments
+      .filter((a) => a.client && a.client.id === parseInt(client_id, 10))
+      .filter((a) => new Date(a.startDate) >= now || new Date(a.endDate) >= now)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    if (clientAppointments.length === 0) {
+      return res.status(404).json({ error: "No tienes citas próximas agendadas" });
+    }
+
+    const nextAppt = clientAppointments[0];
+    
+    // Devolver sólo datos seguros y útiles para la vista pública
+    res.json({
+      ok: true,
+      appointment: {
+        id: nextAppt.id,
+        startDate: nextAppt.startDate,
+        endDate: nextAppt.endDate,
+        agentName: nextAppt.agent?.name || "Asesor",
+        agentPhoto: nextAppt.agent?.profileImageUrl || null,
+        meetingUrl: nextAppt.meetingUrl || null,
+        meetingProvider: nextAppt.meetingProvider || null,
+      }
+    });
+
+  } catch (error) {
+    console.error("Error obteniendo cita pública:", error.message);
+    res.status(500).json({ error: "Error al consultar la cita" });
+  }
+});
+
 // GET /p/* (Landing page tradicional)
 router.get("/p/*", async (req, res) => {
   try {
