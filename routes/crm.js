@@ -88,6 +88,7 @@ router.post("/appointment", async (req, res) => {
       date,
       confirmed: "true",
       attended: "false",
+      virtual: "true",
     }, subIdToUse);
 
     // Crear Recordatorios de cita R2, R3, R4 según flujo definido
