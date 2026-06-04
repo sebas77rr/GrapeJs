@@ -96,7 +96,7 @@ router.post("/", async (req, res) => {
     const pageData = {
       name: title,
       url: `${domain}/f/${identifier}/${safeTitle}`,
-      published: "false",
+      published: "true",
       type: "VIDEO_FUNNEL",
       origin: process.env.APP_ORIGIN || "KiuFlow",
       jsonData: { video_url: video_url || "", ...rest },
@@ -109,7 +109,8 @@ router.post("/", async (req, res) => {
         title,
         video_url,
         url: result.url,
-        is_published: 0,
+        public_slug: `${identifier}/${safeTitle}`,
+        is_published: 1,
         ...rest,
       },
     });
