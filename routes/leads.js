@@ -85,25 +85,33 @@ router.post("/:funnelId/leads", async (req, res) => {
 
     /**
      * Paso 3: Disparador de Automatizaciones
-     * Si el funnel posee un recordatorio inmediato programado (R1),
-     * se inyecta en el CRM de forma asíncrona para procesamiento.
+     * Para pruebas: Programamos TODOS los recordatorios espaciados cada 2 minutos.
+     * R1 a los 2 min, R2 a los 4 min, R3 a los 6 min.
      */
     if (funnel.jsonData && Array.isArray(funnel.jsonData.reminders)) {
-      const r1 = funnel.jsonData.reminders[0]; // solo el primero
-      if (r1 && r1.channelId) {
-        const remindAt = new Date(Date.now() + 5 * 60000).toISOString(); // 5 mins después
-        try {
-          await kiuflowService.createReminder({
+      // Usamos map para no usar await dentro del forEach si queremos ser estrictos, 
+      // o Promise.all para esperar a que todos se creen.
+      const reminderPromises = funnel.jsonData.reminders.map((r, index) => {
+        if (r && r.channelId) {
+          const minutesToAdd = (index + 1) * 2; // 2, 4, 6 minutos
+          const remindAt = new Date(Date.now() + minutesToAdd * 60000).toISOString(); 
+          
+          // El tercer recordatorio suele llevar la metadata (enlaces a la vista de cliente)
+          // El content ya debería venir inyectado desde el frontend, pero lo enviamos tal cual.
+          return kiuflowService.createReminder({
             clientId,
-            channelId: r1.channelId,
-            templateId: r1.templateId || null,
-            content: r1.content,
+            channelId: r.channelId,
+            templateId: r.templateId || null,
+            content: r.content,
             remindAt
-          }, subIdToUse);
-        } catch (err) { 
-          console.error("Error creando R1:", err.message);
+          }, subIdToUse).catch(err => {
+            console.error(`Error creando R${index + 1}:`, err.message);
+          });
         }
-      }
+        return Promise.resolve();
+      });
+
+      await Promise.all(reminderPromises);
     }
 
     res.status(201).json({ ok: true, lead: { id: clientId, ...data } });
