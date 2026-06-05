@@ -41,17 +41,21 @@ router.post("/:funnelId/leads", async (req, res) => {
         customFields[key] = data[key];
       }
     }
+    
+    const clientData = {
+      name,
+      phone,
+      email,
+      source: funnelId, // Usar el campo source nativo si KiuFlow lo soporta
+      customFields,
+      custom_fields: customFields // Enviar ambos formatos para asegurar compatibilidad
+    };
 
     /**
      * Paso 2: Sincronización con el CRM
      * Registra el cliente (Lead) en el repositorio central de KiuFlow.
      */
-    const clientData = {
-      name,
-      phone,
-      email,
-      customFields
-    };
+    // clientData ya se configuró arriba
 
     // Si el funnel tiene un channelId principal configurado, se lo asignamos
     if (funnel.jsonData && funnel.jsonData.defaultChannelId) {
@@ -122,18 +126,23 @@ router.get("/:funnelId/leads", async (req, res) => {
     const clients = await kiuflowService.getClients(subIdToUse);
     
     // Filtrado de Leads correspondientes a este embudo
-    const funnelLeads = clients.filter(c => 
-      c.customFields && c.customFields.leadSource === funnelId
-    ).map(c => ({
-      id: c.id,
-      created_at: c.createdAt || new Date().toISOString(),
-      data: {
-        nombre: c.name,
-        telefono: c.phone,
-        email: c.email,
-        ...c.customFields
-      }
-    }));
+    const funnelLeads = clients.filter(c => {
+      const cFields = c.customFields || c.custom_fields || {};
+      const source = cFields.leadSource || cFields.lead_source || c.source || '';
+      return String(source) === String(funnelId);
+    }).map(c => {
+      const cFields = c.customFields || c.custom_fields || {};
+      return {
+        id: c.id,
+        created_at: c.createdAt || c.created_at || new Date().toISOString(),
+        data: {
+          nombre: c.name,
+          telefono: c.phone,
+          email: c.email,
+          ...cFields
+        }
+      };
+    });
 
     // Opcional: ordenar descendente por fecha
     funnelLeads.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
