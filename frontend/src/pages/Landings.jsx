@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Palette, Lock, LayoutDashboard, LayoutGrid, List } from "lucide-react";
+import { BASE_URL } from "../infrastructure/api/config";
 
 /**
  * LandingsView
@@ -8,7 +9,6 @@ import { Palette, Lock, LayoutDashboard, LayoutGrid, List } from "lucide-react";
 export default function LandingsView({ client, projects, onNavigate, onDelete, onRefresh }) {
   const used = projects.length;
   const max = client?.max_landings || 1;
-  const BASE_URL = import.meta.env.PROD ? window.location.origin : "http://localhost:3001";
   const [viewMode, setViewMode] = useState("grid");
 
   return (
@@ -68,10 +68,18 @@ export default function LandingsView({ client, projects, onNavigate, onDelete, o
           {viewMode === "grid" ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
               {projects.map((p) => (
-            <div key={p.id} className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ring-1 ring-slate-900/5">
-              <div className="bg-gradient-to-br from-indigo-50 to-white h-[140px] flex items-center justify-center border-b border-slate-100 relative group">
-                <div className="text-indigo-200 group-hover:scale-110 group-hover:text-indigo-400 transition-all duration-500"><Palette size={36} strokeWidth={1.5} /></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div key={p.id} className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ring-1 ring-slate-900/5 group">
+              <div className="bg-slate-100 h-[140px] flex items-center justify-center border-b border-slate-100 relative overflow-hidden">
+                {p.url ? (
+                  <iframe 
+                    src={p.url} 
+                    className="absolute top-0 left-0 w-[400%] h-[400%] origin-top-left scale-[0.25] pointer-events-none border-none opacity-80 group-hover:opacity-100 transition-opacity duration-500 bg-white"
+                    title={`Preview ${p.name}`}
+                  />
+                ) : (
+                  <div className="text-indigo-200 group-hover:scale-110 group-hover:text-indigo-400 transition-all duration-500"><Palette size={36} strokeWidth={1.5} /></div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               </div>
               <div className="p-4 px-5">
                 <div className="flex items-center justify-between mb-1.5">
@@ -129,8 +137,16 @@ export default function LandingsView({ client, projects, onNavigate, onDelete, o
             <div className="flex flex-col gap-3">
               {projects.map((p) => (
                 <div key={p.id} className="bg-white border border-slate-200/60 rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all duration-300 ring-1 ring-slate-900/5 flex items-center p-3 px-5 gap-5">
-                  <div className="bg-gradient-to-br from-indigo-50 to-white w-14 h-14 rounded-lg flex items-center justify-center border border-slate-100 shrink-0">
-                    <Palette size={24} className="text-indigo-300" strokeWidth={1.5} />
+                  <div className="bg-slate-100 w-14 h-14 rounded-lg flex items-center justify-center border border-slate-100 shrink-0 relative overflow-hidden">
+                    {p.url ? (
+                      <iframe 
+                        src={p.url} 
+                        className="absolute top-0 left-0 w-[800%] h-[800%] origin-top-left scale-[0.125] pointer-events-none border-none opacity-80 bg-white"
+                        title={`Preview ${p.name}`}
+                      />
+                    ) : (
+                      <Palette size={24} className="text-indigo-300 relative z-10" strokeWidth={1.5} />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">

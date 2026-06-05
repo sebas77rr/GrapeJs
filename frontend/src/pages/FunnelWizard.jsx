@@ -8,7 +8,7 @@ import { BASE_URL } from "../infrastructure/api/config";
  * Asistente paso a paso para la creación y configuración de Video Funnels.
  * Gestiona el diseño, video, colores, integraciones y notificaciones CRM.
  */
-export default function FunnelWizardView({ clientId, funnelId, onBack }) {
+export default function FunnelWizardView({ clientId, subId, funnelId, onBack }) {
   const renderVideoPreview = (url) => {
     if (!url) return null;
     
@@ -25,7 +25,11 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
     }
     
     // Default to native video player for MP4
-    return <video controls className="w-full max-h-[300px] object-contain" src={url}>Tu navegador no soporta la reproducción.</video>;
+    return (
+      <div className={`mx-auto ${form.video_orientation === 'vertical' ? 'max-w-[280px]' : 'w-full'}`}>
+        <video controls className={`w-full ${form.video_orientation === 'vertical' ? 'aspect-[9/16]' : 'aspect-video'} object-cover rounded-md`} src={url}>Tu navegador no soporta la reproducción.</video>
+      </div>
+    );
   };
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -48,8 +52,8 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
   const updateReminder = (key, val) => setReminders(prev => ({ ...prev, [key]: val }));
   
   const [form, setForm] = useState({
-    title: '', highlight_text: '', video_url: '', video_type: 'youtube', theme: '', bg_color: '', bg_image: '',
-    cta_color: '#DB2C52', cta_text: 'Quiero inscribirme', locked_btn_text: 'Ve el video para desbloquear el beneficio', video_threshold: 90,
+    title: '', highlight_text: '', video_url: '', video_type: 'youtube', video_orientation: 'horizontal', theme: '', bg_color: '', bg_image: '',
+    text_color: '', cta_color: '#DB2C52', cta_text: 'Quiero inscribirme', locked_btn_text: 'Ve el video para desbloquear el beneficio', video_threshold: 90,
     form_fields: [
       { name: 'nombre', label: 'Nombre completo', type: 'text', required: true },
       { name: 'email', label: 'Correo electrónico', type: 'email', required: true },
@@ -61,12 +65,12 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
   });
 
   useEffect(() => {
-    FunnelService.getChannels().then(res => setChannels(res.channels || [])).catch(console.error);
+    FunnelService.getChannels(subId).then(res => setChannels(res.channels || [])).catch(console.error);
   }, []);
 
   useEffect(() => {
     if (form.defaultChannelId) {
-      FunnelService.getTemplates(form.defaultChannelId).then(res => setTemplates(res.templates || [])).catch(console.error);
+      FunnelService.getTemplates(form.defaultChannelId, subId).then(res => setTemplates(res.templates || [])).catch(console.error);
     } else {
       setTemplates([]);
     }
@@ -74,15 +78,15 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
 
   useEffect(() => {
     if (funnelId) {
-      FunnelService.getFunnelById(funnelId, clientId).then(({ funnel }) => {
+      FunnelService.getFunnelById(funnelId, clientId, subId).then(({ funnel }) => {
         let parsed = funnel.form_fields;
         if (typeof parsed === 'string') {
           try { parsed = JSON.parse(parsed); if (typeof parsed === 'string') parsed = JSON.parse(parsed); } 
           catch(e) { parsed = []; }
         }
         setForm({
-          title: funnel.title || '', highlight_text: funnel.highlight_text || '', video_url: funnel.video_url || '', video_type: funnel.video_type || 'youtube',
-          theme: funnel.theme || '', bg_color: funnel.bg_color || '', bg_image: funnel.bg_image || '', cta_color: funnel.cta_color || '#DB2C52',
+          title: funnel.title || '', highlight_text: funnel.highlight_text || '', video_url: funnel.video_url || '', video_type: funnel.video_type || 'youtube', video_orientation: funnel.video_orientation || 'horizontal',
+          theme: funnel.theme || '', bg_color: funnel.bg_color || '', bg_image: funnel.bg_image || '', text_color: funnel.text_color || '', cta_color: funnel.cta_color || '#DB2C52',
           cta_text: funnel.cta_text || 'Quiero inscribirme', locked_btn_text: funnel.locked_btn_text || 'Ve el video para desbloquear el beneficio',
           video_threshold: funnel.video_threshold || 90, form_fields: parsed || [], defaultChannelId: funnel.defaultChannelId || ''
         });
@@ -119,7 +123,6 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Formatear reminders para enviarlos a KiuFlow estructurados
       const remindersArray = [
         { enabled: reminders.r1_enabled, channelId: form.defaultChannelId, templateId: reminders.r1_templateId, content: reminders.r1_text, hours_offset: reminders.r1_hours },
         { enabled: reminders.r2_enabled, channelId: form.defaultChannelId, templateId: reminders.r2_templateId, content: reminders.r2_text, hours_offset: reminders.r2_hours },
@@ -130,16 +133,33 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
       const payload = { 
         ...form, 
         form_fields: JSON.stringify(form.form_fields), 
-        reminders: remindersArray, // Esto se mandará a jsonData.reminders
-        reminders_config: JSON.stringify(reminders) // Estado visual guardado aquí
+        reminders: remindersArray,
+        reminders_config: JSON.stringify(reminders)
       };
-      let result = funnelId ? await FunnelService.updateFunnel(funnelId, clientId, payload) : await FunnelService.createFunnel({ ...payload, client_id: clientId });
-      if (result.funnel) {
-        if (!funnelId) await FunnelService.publishFunnel(result.funnel.id);
-        setCreated(result.funnel);
-        setStep(6);
+
+      if (funnelId) {
+        // UPDATE: el backend devuelve { ok: true, savedAt: '...' }
+        const result = await FunnelService.updateFunnel(funnelId, clientId, { ...payload, sub_id: subId });
+        if (result.ok) {
+          setCreated(result.funnel || { id: funnelId, title: form.title, url: null });
+          setStep(6);
+        } else {
+          alert('Error al guardar el funnel');
+        }
+      } else {
+        // CREATE: el backend devuelve { funnel: { id, title, url, ... } }
+        const result = await FunnelService.createFunnel({ ...payload, client_id: clientId, sub_id: subId });
+        if (result.funnel) {
+          setCreated(result.funnel);
+          setStep(6);
+        } else {
+          alert('Error al crear el funnel');
+        }
       }
-    } catch(e) { alert('Error al guardar el funnel'); }
+    } catch(e) { 
+      console.error('Error guardando funnel:', e);
+      alert('Error al guardar el funnel'); 
+    }
     setSaving(false);
   };
 
@@ -177,65 +197,84 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
               <textarea className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 text-sm outline-none min-h-[80px] resize-y focus:border-sidebar" placeholder="Ej: En este video exclusivo te mostramos..." value={form.highlight_text} onChange={e => update('highlight_text', e.target.value)} />
             </div>
             <div className="bg-slate-50 p-5 rounded-xl border border-dashed border-slate-300">
-              <label className="text-slate-600 text-[13px] block mb-2 font-semibold">Apariencia Base (Tema)</label>
-              <div className="flex gap-3 mb-4">
-                <button onClick={() => { update('theme', 'dark'); update('bg_color', ''); update('bg_image', ''); }} className={`flex-1 p-4 rounded-lg cursor-pointer text-center ${form.theme === 'dark' ? 'border-2 border-sidebar bg-slate-900 text-white' : 'border border-slate-700 bg-slate-900 text-white'}`}>
-                  <Moon className="mx-auto mb-2" size={24} /><div className="text-[13px] font-semibold">Dark Premium</div>
+            {/* ── Apariencia Base ── */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col gap-5">
+              <div className="text-slate-700 text-[13px] font-bold uppercase tracking-wider flex items-center gap-2">
+                <Moon size={14} className="text-slate-400" /> Tema Base
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => { update('theme', 'dark'); update('bg_color', ''); update('bg_image', ''); }} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${form.theme === 'dark' ? 'ring-2 ring-sidebar bg-slate-900 text-white shadow-md' : 'border border-slate-200 bg-slate-900 text-white hover:shadow-sm'}`}>
+                  <Moon size={20} /><div className="text-[13px] font-semibold">Dark Premium</div>
                 </button>
-                <button onClick={() => { update('theme', 'light'); update('bg_color', ''); update('bg_image', ''); }} className={`flex-1 p-4 rounded-lg cursor-pointer text-center ${form.theme === 'light' ? 'border-2 border-sidebar bg-white text-slate-900' : 'border border-slate-300 bg-white text-slate-900'}`}>
-                  <Sun className="mx-auto mb-2 text-amber-500" size={24} /><div className="text-[13px] font-semibold">Light Minimal</div>
+                <button onClick={() => { update('theme', 'light'); update('bg_color', ''); update('bg_image', ''); }} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${form.theme === 'light' ? 'ring-2 ring-sidebar bg-white text-slate-900 shadow-md' : 'border border-slate-200 bg-white text-slate-900 hover:shadow-sm'}`}>
+                  <Sun size={20} className="text-amber-500" /><div className="text-[13px] font-semibold">Light Minimal</div>
                 </button>
               </div>
-              <label className="text-slate-600 text-[13px] block mb-2 font-semibold">Fondo Personalizado (Opcional)</label>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-slate-600 text-xs block mb-2 font-medium">Color Sólido</label>
-                  <div className="flex gap-2">
-                    <input type="color" className="w-[50px] h-[42px] p-0 border-none rounded-lg cursor-pointer" value={form.bg_color || '#ffffff'} onChange={e => { update('bg_color', e.target.value); update('bg_image', ''); update('theme', ''); }} />
-                    <input className="flex-1 bg-white border border-slate-300 rounded-lg p-2 text-slate-900 text-sm outline-none" placeholder="#HEX" value={form.bg_color} onChange={e => { update('bg_color', e.target.value); update('bg_image', ''); update('theme', ''); }} />
-                  </div>
-                </div>
-                <div className="flex-[2]">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-slate-600 text-xs font-medium">URL de Imagen de Fondo</label>
-                    <button 
-                      onClick={async () => {
-                        if (!showImageGallery && kiuflowFiles.length === 0) {
-                          const res = await FunnelService.getFiles();
-                          setKiuflowFiles(res.files || []);
-                        }
-                        setShowImageGallery(!showImageGallery);
-                      }}
-                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded transition-colors"
-                    >
-                      {showImageGallery ? 'Cerrar Galería' : 'Explorar Galería'}
-                    </button>
-                  </div>
-                  
-                  {showImageGallery && (
-                    <div className="mb-3 bg-slate-50 border border-slate-200 rounded-lg p-3 max-h-[200px] overflow-y-auto">
-                      {kiuflowFiles.length === 0 ? (
-                        <div className="text-xs text-slate-500 text-center py-2">No se encontraron archivos en KiuFlow.</div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {kiuflowFiles.filter(f => f.type?.includes('image') || f.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)).map(file => (
-                            <div 
-                              key={file.id} 
-                              onClick={() => { update('bg_image', file.url); update('bg_color', ''); update('theme', ''); setShowImageGallery(false); }}
-                              className="cursor-pointer border border-slate-200 bg-white hover:border-indigo-500 rounded p-1 text-center transition-all group"
-                            >
-                              <img src={file.url} alt={file.name} className="w-full h-12 object-cover rounded mb-1 bg-slate-100" />
-                              <div className="text-[9px] text-slate-600 truncate px-1" title={file.name}>{file.name}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  <input className="w-full bg-white border border-slate-300 rounded-lg p-3 py-2 text-slate-900 text-sm outline-none" placeholder="https://..." value={form.bg_image} onChange={e => { update('bg_image', e.target.value); update('bg_color', ''); update('theme', ''); }} />
+              <div className="border-t border-slate-200 pt-4">
+                <div className="text-slate-700 text-[13px] font-bold uppercase tracking-wider mb-3">Personalización (Opcional)</div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-slate-500 text-xs block mb-2 font-semibold">Color de Letras</label>
+                    <div className="flex gap-2">
+                      <input type="color" className="w-[42px] h-[42px] p-0.5 border border-slate-200 rounded-lg cursor-pointer bg-white" value={form.text_color || '#ffffff'} onChange={e => { update('text_color', e.target.value); update('theme', ''); }} />
+                      <input className="flex-1 bg-white border border-slate-200 rounded-lg px-3 text-slate-800 text-sm outline-none focus:border-sidebar" placeholder="#HEX" value={form.text_color} onChange={e => { update('text_color', e.target.value); update('theme', ''); }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-slate-500 text-xs block mb-2 font-semibold">Color Sólido (Fondo)</label>
+                    <div className="flex gap-2">
+                      <input type="color" className="w-[42px] h-[42px] p-0.5 border border-slate-200 rounded-lg cursor-pointer bg-white" value={form.bg_color || '#ffffff'} onChange={e => { update('bg_color', e.target.value); update('bg_image', ''); update('theme', ''); }} />
+                      <input className="flex-1 bg-white border border-slate-200 rounded-lg px-3 text-slate-800 text-sm outline-none focus:border-sidebar" placeholder="#HEX" value={form.bg_color} onChange={e => { update('bg_color', e.target.value); update('bg_image', ''); update('theme', ''); }} />
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              <div className="border-t border-slate-200 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Imagen de Fondo</label>
+                  <button
+                    onClick={async () => {
+                      if (!showImageGallery && kiuflowFiles.length === 0) {
+                        const res = await FunnelService.getFiles(85, subId);
+                        setKiuflowFiles(res.files || []);
+                      }
+                      setShowImageGallery(!showImageGallery);
+                    }}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    {showImageGallery ? 'Cerrar Galería' : '📁 Explorar Galería'}
+                  </button>
+                </div>
+                {showImageGallery && (
+                  <div className="mb-3 bg-white border border-slate-200 rounded-xl p-3 max-h-[180px] overflow-y-auto">
+                    {kiuflowFiles.length === 0 ? (
+                      <div className="text-xs text-slate-400 text-center py-4">No se encontraron imágenes en KiuFlow.</div>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-2">
+                        {kiuflowFiles.filter(f => f.type?.includes('image') || f.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)).map(file => (
+                          <div
+                            key={file.id}
+                            onClick={() => { update('bg_image', file.url); update('bg_color', ''); update('theme', ''); setShowImageGallery(false); }}
+                            className="cursor-pointer border border-slate-200 bg-slate-50 hover:border-indigo-500 hover:bg-indigo-50 rounded-lg p-1.5 text-center transition-all"
+                          >
+                            <img src={file.url} alt={file.name} referrerPolicy="no-referrer" className="w-full h-10 object-cover rounded mb-1" />
+                            <div className="text-[9px] text-slate-500 truncate">{file.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <input
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-sm outline-none focus:border-sidebar"
+                  placeholder="https://... o selecciona de galería"
+                  value={form.bg_image}
+                  onChange={e => { update('bg_image', e.target.value); update('bg_color', ''); update('theme', ''); }}
+                />
+              </div>
+            </div>
             </div>
           </div>
         )}
@@ -254,7 +293,7 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
                 <button 
                   onClick={async () => {
                     if (!showGallery && kiuflowFiles.length === 0) {
-                      const res = await FunnelService.getFiles();
+                      const res = await FunnelService.getFiles(85, subId);
                       setKiuflowFiles(res.files || []);
                     }
                     setShowGallery(!showGallery);
@@ -308,6 +347,41 @@ export default function FunnelWizardView({ clientId, funnelId, onBack }) {
                   {renderVideoPreview(form.video_url)}
                 </div>
               )}
+            </div>
+
+            {/* Orientación del video */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+              <div className="text-slate-700 text-[13px] font-bold uppercase tracking-wider mb-3">Orientación del Video</div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => update('video_orientation', 'horizontal')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    form.video_orientation !== 'vertical'
+                      ? 'border-sidebar bg-sidebar/5 text-sidebar'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="w-16 h-10 rounded-md border-2 border-current opacity-80 flex items-center justify-center">
+                    <div className="w-3 h-3 rounded-full border-2 border-current" />
+                  </div>
+                  <span className="text-[13px] font-semibold">Horizontal</span>
+                  <span className="text-[11px] opacity-60">Formato panorámico 16:9</span>
+                </button>
+                <button
+                  onClick={() => update('video_orientation', 'vertical')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    form.video_orientation === 'vertical'
+                      ? 'border-sidebar bg-sidebar/5 text-sidebar'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="w-10 h-16 rounded-md border-2 border-current opacity-80 flex items-center justify-center">
+                    <div className="w-3 h-3 rounded-full border-2 border-current" />
+                  </div>
+                  <span className="text-[13px] font-semibold">Vertical</span>
+                  <span className="text-[11px] opacity-60">Formato reels/stories 9:16</span>
+                </button>
+              </div>
             </div>
 
             <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 mt-2">

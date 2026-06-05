@@ -1,97 +1,188 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+
+const kiuflowService = require("../services/kiuflowService");
 
 // GET /api/projects?client_id=X
 router.get("/", async (req, res) => {
-  const { client_id } = req.query;
-  if (!client_id) return res.status(400).json({ error: "client_id requerido" });
+  try {
+    const subId = req.query.sub_id && req.query.sub_id !== "undefined"
+      ? req.query.sub_id
+      : process.env.KIUFLOW_SUBSCRIPTION_ID;
 
-  const client = await db.getClient(client_id);
-  if (!client) return res.status(404).json({ error: "Cliente no encontrado" });
+    const kfPages = await kiuflowService.listWebpages(subId);
+    
+    /**
+     * Filtrar los registros traídos del backend para aislar
+     * únicamente los correspondientes al módulo de Landing Pages.
+     */
+    const landingPages = kfPages.filter(p => p.type === "LANDING_PAGE");
 
-  let projects = await db.getProjects(client_id);
-  projects = projects.map(p => ({
-    ...p,
-    json_data: p.json_data ? JSON.parse(p.json_data) : null
-  }));
-  res.json({ projects, used: projects.length, max: client.max_landings });
+    const projects = landingPages.map(p => ({
+      id: p.id,
+      name: p.name || "Sin Nombre",
+      client_id: "kiuflow_user",
+      template_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      json_data: p.jsonData || null,
+      html: p.jsonData?.gjs_html || "",
+      css: p.jsonData?.gjs_css || "",
+      url: p.url || ""
+    }));
+
+    res.json({ projects, used: projects.length, max: 999 });
+  } catch (error) {
+    console.error("Error obteniendo proyectos de KiuFlow:", error.message);
+    res.status(500).json({ error: "Error conectando con KiuFlow" });
+  }
 });
 
-// GET /api/projects/:id?client_id=X
+// GET /api/projects/:id
 router.get("/:id", async (req, res) => {
-  const { client_id } = req.query;
-  const project = await db.getProject(req.params.id, client_id);
-  if (!project) return res.status(404).json({ error: "Proyecto no encontrado" });
-  res.json({ project: { ...project, json_data: project.json_data ? JSON.parse(project.json_data) : null } });
+  try {
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
+    if (!kfPage) return res.status(404).json({ error: "Proyecto no encontrado" });
+
+    const project = {
+      id: kfPage.id,
+      name: kfPage.name,
+      client_id: "kiuflow_user",
+      json_data: kfPage.jsonData?.gjs_components || null,
+      html: kfPage.jsonData?.gjs_html || "<h1>Aún no hay contenido</h1>",
+      css: kfPage.jsonData?.gjs_css || ""
+    };
+    
+    res.json({ project });
+  } catch(error) {
+    console.error("Error obteniendo proyecto:", error.message);
+    res.status(500).json({ error: "Error conectando con KiuFlow" });
+  }
 });
 
 // POST /api/projects
 router.post("/", async (req, res) => {
-  const { client_id, name, template_id } = req.body;
-  if (!client_id || !name)
-    return res.status(400).json({ error: "client_id y name son requeridos" });
+  const { name, template_id, sub_id } = req.body;
+  if (!name) return res.status(400).json({ error: "name es requerido" });
 
-  const client = await db.getClient(client_id);
-  if (!client) return res.status(404).json({ error: "Cliente no encontrado" });
+  const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
-  const currentProjects = await db.getProjects(client_id);
-  const count = currentProjects.length;
-  if (count >= client.max_landings) {
-    return res.status(403).json({
-      error: "LIMIT_REACHED",
-      message: `Este cliente ya tiene ${count}/${client.max_landings} landing page(s). Límite alcanzado.`,
-      used: count,
-      max: client.max_landings,
-    });
-  }
-
-  let initialJson = null;
-  if (template_id) {
-    const tpl = await db.getTemplate(template_id);
-    if (tpl) {
-      initialJson = {
-        pages: [{ name: "index", component: tpl.html, styles: tpl.css || "" }]
-      };
+  try {
+    const kfPages = await kiuflowService.listWebpages(subIdToUse);
+    const count = kfPages.filter(p => p.type === "LANDING_PAGE").length;
+    
+    /**
+     * Validación de cuota/límites:
+     * Verifica que el número de páginas no exceda el límite definido en la suscripción.
+     */
+    if (count >= 999) {
+      return res.status(403).json({
+        error: "LIMIT_REACHED",
+        message: "Límite de landings alcanzado."
+      });
     }
-  }
 
-  let project = await db.createProject({ client_id, name, template_id, json_data: initialJson });
-  res.status(201).json({ project: { ...project, json_data: project.json_data ? JSON.parse(project.json_data) : null } });
+    const safeName = name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'landing';
+    const domain = process.env.APP_DOMAIN || "https://builder-api.kiuflow.online";
+    const identifier = Date.now().toString(36);
+    const finalUrl = `${domain}/p/${identifier}/${safeName}`;
+
+
+    const pageData = {
+      name: name,
+      url: finalUrl,
+      published: "true",
+      type: "LANDING_PAGE",
+      origin: process.env.APP_ORIGIN || "KiuFlow",
+      jsonData: {
+        gjs_html: "",
+        gjs_css: "",
+        template_id: template_id || ""
+      }
+    };
+
+    const kfResponse = await kiuflowService.createWebpage(pageData, subIdToUse);
+
+    const project = {
+      id: kfResponse.id || kfResponse.pageId || Date.now(),
+      name: name,
+      client_id: "kiuflow_user",
+      json_data: pageData.jsonData.gjs_components || null,
+      html: "",
+      css: ""
+    };
+
+    res.status(201).json({ project });
+  } catch (error) {
+    console.error("Error creando landing en KiuFlow:", error.message);
+    res.status(500).json({ error: "No se pudo crear en KiuFlow" });
+  }
 });
 
 // GET /api/projects/:id/preview
 router.get("/:id/preview", async (req, res) => {
-  const { client_id } = req.query;
-  const project = await db.getProject(req.params.id, client_id);
-  if (!project) return res.status(404).send("Proyecto no encontrado");
+  const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+  try {
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
+    if (!kfPage) return res.status(404).send("Proyecto no encontrado");
 
-  const html = project.html || "<h1>Aún no hay contenido</h1>";
-  const css = project.css || "";
+    const html = kfPage.jsonData?.gjs_html || "<h1>Aún no hay contenido</h1>";
+    const css = kfPage.jsonData?.gjs_css || "";
 
-  res.send(`<!DOCTYPE html>
+    res.send(`<!DOCTYPE html>
 <html>
-  <head><meta charset="utf-8"><title>${project.name}</title><style>${css}</style></head>
+  <head><meta charset="utf-8"><title>${kfPage.name}</title><style>${css}</style></head>
   <body>${html}</body>
 </html>`);
+  } catch(error) {
+    res.status(500).send("Error conectando con KiuFlow");
+  }
 });
 
 // PUT /api/projects/:id
 router.put("/:id", async (req, res) => {
-  const { client_id, json_data, html, css } = req.body;
-  if (!client_id) return res.status(400).json({ error: "client_id requerido" });
+  const { json_data, html, css, name, sub_id } = req.body;
+  const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+  
+  try {
 
-  const updated = await db.updateProject(req.params.id, client_id, json_data, html, css);
-  if (!updated) return res.status(404).json({ error: "Proyecto no encontrado" });
+    const kfPage = await kiuflowService.getWebpage(req.params.id, subIdToUse);
+    if (!kfPage) return res.status(404).json({ error: "Proyecto no encontrado en KiuFlow" });
 
-  res.json({ ok: true, savedAt: new Date().toISOString() });
+
+    const pageData = {
+      name: name || kfPage.name,
+      url: kfPage.url,
+      published: "true",
+      type: "LANDING_PAGE",
+      origin: process.env.APP_ORIGIN || "KiuFlow",
+      jsonData: {
+        ...(kfPage.jsonData || {}),
+        gjs_html: html !== undefined ? html : kfPage.jsonData?.gjs_html,
+        gjs_css: css !== undefined ? css : kfPage.jsonData?.gjs_css,
+        gjs_components: json_data !== undefined ? json_data : kfPage.jsonData?.gjs_components
+      }
+    };
+
+    await kiuflowService.updateWebpage(req.params.id, pageData, subIdToUse);
+    res.json({ ok: true, savedAt: new Date().toISOString() });
+  } catch(error) {
+    console.error("Error guardando proyecto:", error.message);
+    res.status(500).json({ error: "Error al guardar en KiuFlow" });
+  }
 });
 
 // DELETE /api/projects/:id
 router.delete("/:id", async (req, res) => {
-  const { client_id } = req.query;
-  await db.deleteProject(req.params.id, client_id);
-  res.json({ ok: true });
+  const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+  try {
+    await kiuflowService.deleteWebpage(req.params.id, subIdToUse);
+    res.json({ ok: true });
+  } catch(error) {
+    console.error("Error eliminando:", error.message);
+    res.status(500).json({ error: "Error al eliminar en KiuFlow" });
+  }
 });
 
 module.exports = router;

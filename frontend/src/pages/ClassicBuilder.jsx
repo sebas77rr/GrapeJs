@@ -7,7 +7,7 @@ import GrapesJSEditor from "../components/editor";
  * Envoltorio (Wrapper) para el editor GrapesJS original.
  * Inicializa el editor para construir Landing Pages tradicionales.
  */
-export default function ClassicBuilderView({ projectId, clientId, onBack }) {
+export default function ClassicBuilderView({ projectId, clientId, subId, onBack }) {
   const [projectData, setProjectData] = useState(null);
   const [projectName, setProjectName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -15,16 +15,24 @@ export default function ClassicBuilderView({ projectId, clientId, onBack }) {
 
   useEffect(() => {
     if (projectId && clientId) {
-      ProjectService.getProjectById(projectId, clientId).then((data) => {
-        if (data.project) {
-          setProjectName(data.project.name);
-          setProjectData(data.project.json_data || {});
+      ProjectService.getProjectById(projectId, clientId, subId)
+        .then((data) => {
+          if (data.project) {
+            setProjectName(data.project.name);
+            setProjectData(data.project.json_data || {});
+          } else {
+            // Proyecto nuevo vacío — igual abrimos el editor
+            setProjectData({});
+          }
           setLoading(false);
-        }
-      });
+        })
+        .catch(() => {
+          // Si falla la carga, abrimos el editor vacío de todas formas
+          setProjectData({});
+          setLoading(false);
+        });
     }
 
-    // Listen for custom event from GrapesJSEditor's back button
     const handleBack = () => onBack();
     window.addEventListener('kiuflow-back-to-landings', handleBack);
     return () => window.removeEventListener('kiuflow-back-to-landings', handleBack);
@@ -38,7 +46,7 @@ export default function ClassicBuilderView({ projectId, clientId, onBack }) {
       const html = editorInstance.getHtml();
       const css = editorInstance.getCss();
       const finalName = newName !== undefined ? newName : projectName;
-      await ProjectService.saveProject(projectId, clientId, pData, html, css, finalName);
+      await ProjectService.saveProject(projectId, clientId, subId, pData, html, css, finalName);
       if (newName !== undefined) setProjectName(newName);
       setSaveStatus("saved");
     } catch (e) {

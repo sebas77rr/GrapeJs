@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Palette, MonitorPlay } from "lucide-react";
 import { FunnelService } from "../services/AppServices";
+import { useAppContext } from "../context/AppContext";
 
 /**
  * DashboardView
@@ -8,6 +9,7 @@ import { FunnelService } from "../services/AppServices";
  * la suscripción activa y accesos rápidos a los módulos.
  */
 export default function DashboardView({ client, projects, onNavigate }) {
+  const { currentSubId } = useAppContext();
   const used = projects.length;
   const max = client?.max_landings || 1;
   const percent = Math.min((used / max) * 100, 100);
@@ -15,12 +17,12 @@ export default function DashboardView({ client, projects, onNavigate }) {
   const [funnels, setFunnels] = useState([]);
 
   useEffect(() => {
-    if (client?.id) {
-      FunnelService.getFunnelsByClient(client.id)
+    if (client?.id && currentSubId) {
+      FunnelService.getFunnelsByClient(client.id, currentSubId)
         .then((data) => setFunnels(data.funnels || []))
         .catch(console.error);
     }
-  }, [client?.id]);
+  }, [client?.id, currentSubId]);
 
   const stats = [
     { label: "Landings activas", value: String(used), delta: `de ${max} permitidas` },

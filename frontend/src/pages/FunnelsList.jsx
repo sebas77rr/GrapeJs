@@ -22,17 +22,17 @@ export default function FunnelsListView({ clientId, onNavigate }) {
 
   const handleDelete = async (id, name) => {
     if (!confirm(`¿Eliminar funnel "${name}"?`)) return;
-    await FunnelService.deleteFunnel(id, clientId);
+    await FunnelService.deleteFunnel(id, clientId, currentSubId);
     load();
   };
 
   const handlePublish = async (id) => {
-    await FunnelService.publishFunnel(id);
+    await FunnelService.publishFunnel(id, currentSubId);
     load();
   };
 
   const handleUnpublish = async (id) => {
-    await FunnelService.unpublishFunnel(id);
+    await FunnelService.unpublishFunnel(id, currentSubId);
     load();
   };
 
@@ -46,7 +46,7 @@ export default function FunnelsListView({ clientId, onNavigate }) {
           <h1 className="text-slate-900 text-[26px] font-bold tracking-tight flex items-center gap-2.5">
             <MonitorPlay size={24} className="text-indigo-600" /> Video Funnels
           </h1>
-          <p className="text-slate-500 text-sm mt-1">{used} de {max} funnels usados (Max 1 Activo).</p>
+          <p className="text-slate-500 text-sm mt-1">{used} de {max} funnels usados.</p>
         </div>
         {used < max ? (
           <button
@@ -116,7 +116,7 @@ export default function FunnelsListView({ clientId, onNavigate }) {
                   <button className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 rounded-xl py-2 px-3 text-[11px] font-semibold cursor-pointer transition-colors" onClick={() => onNavigate('funnel-wizard', f.id)}>
                     ✏️ Editar
                   </button>
-                  <button className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl py-2 px-3 text-[11px] font-semibold cursor-pointer flex items-center hover:bg-slate-100 transition-colors" onClick={() => window.open(`https://builder.kiuflow.online/f/${f.public_slug}`, '_blank')}>
+                  <button className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl py-2 px-3 text-[11px] font-semibold cursor-pointer flex items-center hover:bg-slate-100 transition-colors" onClick={() => window.open(f.url || `https://builder-api.kiuflow.online/f/${f.public_slug}`, '_blank')}>
                     <ExternalLink size={14} className="mr-1.5 text-slate-500" /> Ver
                   </button>
                   <button className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl py-2 px-3 text-[11px] font-semibold cursor-pointer flex items-center hover:bg-slate-100 transition-colors" onClick={() => onNavigate('leads', f.id)}>
@@ -129,14 +129,14 @@ export default function FunnelsListView({ clientId, onNavigate }) {
                 {f.public_slug && (
                   <div className="mt-2.5 p-1.5 px-2.5 bg-black/5 rounded-md flex items-center justify-between">
                     <span className="text-slate-500 text-[11px] overflow-hidden text-ellipsis whitespace-nowrap flex-1">
-                      <Link2 size={12} className="inline mr-1" /> <strong className="text-slate-700">{`https://builder.kiuflow.online/f/${f.public_slug}`}</strong>
+                      <Link2 size={12} className="inline mr-1" /> <strong className="text-slate-700">{f.url || `https://builder-api.kiuflow.online/f/${f.public_slug}`}</strong>
                     </span>
                     <button
                       onClick={(e) => {
                         const target = e.currentTarget;
                         target.textContent = '✓';
                         setTimeout(() => (target.textContent = 'Copiar'), 2000);
-                        navigator.clipboard.writeText(`https://builder.kiuflow.online/f/${f.public_slug}`);
+                        navigator.clipboard.writeText(f.url || `https://builder-api.kiuflow.online/f/${f.public_slug}`);
                       }}
                       className="bg-transparent border-none text-green-500 text-[11px] font-bold cursor-pointer pl-2"
                     >

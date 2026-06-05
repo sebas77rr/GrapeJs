@@ -19,16 +19,16 @@ export class ProjectService {
     return await infrastructureApi.createProject(projectData);
   }
 
-  static async getProjectById(projectId, clientId) {
-    return await infrastructureApi.getProject(projectId, clientId);
+  static async getProjectById(projectId, clientId, subId) {
+    return await infrastructureApi.getProject(projectId, clientId, subId);
   }
 
-  static async saveProject(projectId, clientId, jsonData, html, css, name) {
-    return await infrastructureApi.saveProject(projectId, clientId, jsonData, html, css, name);
+  static async saveProject(projectId, clientId, subId, jsonData, html, css, name) {
+    return await infrastructureApi.saveProject(projectId, clientId, subId, jsonData, html, css, name);
   }
 
-  static async deleteProject(projectId, clientId) {
-    return await infrastructureApi.deleteProject(projectId, clientId);
+  static async deleteProject(projectId, clientId, subId) {
+    return await infrastructureApi.deleteProject(projectId, clientId, subId);
   }
 }
 
@@ -52,8 +52,8 @@ export class FunnelService {
     return await infrastructureApi.getFunnels(clientId, subId);
   }
 
-  static async getFunnelById(funnelId, clientId) {
-    return await infrastructureApi.getFunnel(funnelId, clientId);
+  static async getFunnelById(funnelId, clientId, subId) {
+    return await infrastructureApi.getFunnel(funnelId, subId);
   }
 
   static async createFunnel(funnelData) {
@@ -64,32 +64,34 @@ export class FunnelService {
     return await infrastructureApi.updateFunnel(funnelId, funnelData);
   }
 
-  static async deleteFunnel(funnelId, clientId) {
-    return await infrastructureApi.deleteFunnel(funnelId, clientId);
+  static async deleteFunnel(funnelId, clientId, subId) {
+    return await infrastructureApi.deleteFunnel(funnelId, clientId, subId);
   }
 
-  static async publishFunnel(funnelId) {
-    return await infrastructureApi.publishFunnel(funnelId);
+  static async publishFunnel(funnelId, subId) {
+    return await infrastructureApi.publishFunnel(funnelId, subId);
   }
 
-  static async unpublishFunnel(funnelId) {
-    return await infrastructureApi.unpublishFunnel(funnelId);
+  static async unpublishFunnel(funnelId, subId) {
+    return await infrastructureApi.unpublishFunnel(funnelId, subId);
   }
 
-  static async getLeads(funnelId, clientId) {
-    return await infrastructureApi.getLeads(funnelId, clientId);
+  static async getLeads(funnelId, clientId, subId) {
+    return await infrastructureApi.getLeads(funnelId, clientId, subId);
   }
 
   /**
    * Métodos integrados del CRM KiuFlow
    */
-  static async getChannels() {
-    return await infrastructureApi.getChannels();
+  static async getChannels(subId) {
+    return await infrastructureApi.getChannels(subId);
   }
-  static async getTemplates(channelId) {
-    return await infrastructureApi.getTemplates(channelId);
+
+  static async getTemplates(channelId, subId) {
+    return await infrastructureApi.getTemplates(channelId, subId);
   }
-  static async getFiles(directoryId) {
-    return await infrastructureApi.getFiles(directoryId);
+
+  static async getFiles(directoryId = 85, subId) {
+    return await infrastructureApi.getFiles(directoryId, subId);
   }
 }

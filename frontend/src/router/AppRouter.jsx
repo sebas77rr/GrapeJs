@@ -9,6 +9,7 @@ import FunnelWizardView from "../pages/FunnelWizard";
 import AnalyticsView from "../pages/Analytics";
 import SettingsView from "../pages/Settings";
 import LeadsView from "../pages/Leads";
+import CallPortal from "../pages/public/CallPortal";
 import { useAppContext } from "../context/AppContext";
 import { ProjectService } from "../services/AppServices";
 
@@ -19,7 +20,13 @@ import { ProjectService } from "../services/AppServices";
  * para renderizar dinámicamente las vistas (Dashboard, Funnels, Builder).
  */
 export default function AppRouter() {
-  const { currentClient, currentClientId, projects, loadProjects, backendError, isAuthenticated, kiuflowUser } = useAppContext();
+  // ── RUTAS PÚBLICAS AISLADAS ──
+  // Interceptamos la URL directamente para renderizar portales públicos sin cargar el layout del admin
+  if (window.location.pathname === "/call") {
+    return <CallPortal />;
+  }
+
+  const { currentClient, currentClientId, projects, loadProjects, backendError, isAuthenticated, kiuflowUser, currentSubId } = useAppContext();
   const [activeNav, setActiveNav] = useState("dashboard");
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [activeFunnelId, setActiveFunnelId] = useState(null);
@@ -155,7 +162,7 @@ export default function AppRouter() {
     if (!newLandingName.trim()) return;
     setIsCreatingLanding(true);
     try {
-      const result = await ProjectService.createProject({ client_id: currentClientId, name: newLandingName });
+      const result = await ProjectService.createProject({ client_id: currentClientId, sub_id: currentSubId, name: newLandingName });
       if(result.error) {
         alert(result.error);
         return;
@@ -174,7 +181,7 @@ export default function AppRouter() {
 
   const handleDelete = async (id, name, refresh) => {
     if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
-    await ProjectService.deleteProject(id, currentClientId);
+    await ProjectService.deleteProject(id, currentClientId, currentSubId);
     refresh();
   };
 
@@ -197,6 +204,7 @@ export default function AppRouter() {
         <ClassicBuilderView
           projectId={activeProjectId}
           clientId={currentClientId}
+          subId={currentSubId}
           onBack={() => { setActiveNav("landings"); loadProjects(); }}
         />
       );
@@ -206,6 +214,7 @@ export default function AppRouter() {
         <div className="p-8 h-full overflow-auto">
           <FunnelWizardView
             clientId={currentClientId}
+            subId={currentSubId}
             funnelId={activeFunnelId}
             onBack={() => { setActiveNav("funnels"); setActiveFunnelId(null); }}
           />
@@ -218,6 +227,7 @@ export default function AppRouter() {
           <LeadsView
             funnelId={activeFunnelId}
             clientId={currentClientId}
+            subId={currentSubId}
             onBack={() => setActiveNav("funnels")}
           />
         </div>

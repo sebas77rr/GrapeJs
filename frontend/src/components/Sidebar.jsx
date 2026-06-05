@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
+import { API_URL } from "../infrastructure/api/config";
 
 /**
  * Sidebar Component
@@ -18,7 +19,7 @@ import { useAppContext } from "../context/AppContext";
  * - Items de navegación con estilo activo tipo KiuFlow (fondo translúcido, no blanco)
  */
 export default function Sidebar({ client, currentView, onNavigate }) {
-  const { currentSubId, setCurrentSubId, subscriptions, kiuflowUser } = useAppContext();
+  const { currentSubId, setCurrentSubId, subscriptions, kiuflowUser, sidebarColor } = useAppContext();
   const [kiuflowStatus, setKiuflowStatus] = useState({
     connected: false,
     user: null,
@@ -26,7 +27,7 @@ export default function Sidebar({ client, currentView, onNavigate }) {
   const [showSubMenu, setShowSubMenu] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/kiuflow/status")
+    fetch(`${API_URL}/kiuflow/status`)
       .then((res) => res.json())
       .then((data) => setKiuflowStatus(data))
       .catch(() => setKiuflowStatus({ connected: false, user: null }));
@@ -59,7 +60,7 @@ export default function Sidebar({ client, currentView, onNavigate }) {
   };
 
   return (
-    <nav className="w-[256px] bg-[#E94A6E] flex flex-col shrink-0 h-full relative overflow-hidden shadow-[2px_0_20px_rgba(0,0,0,0.15)]">
+    <nav className="w-[256px] flex flex-col shrink-0 h-full relative overflow-hidden shadow-[2px_0_20px_rgba(0,0,0,0.15)]" style={{ backgroundColor: sidebarColor || '#E94A6E' }}>
 
       {/* ── Logo ── */}
       <div className="flex items-center justify-center pt-5 pb-4 px-5 border-b border-white/10">

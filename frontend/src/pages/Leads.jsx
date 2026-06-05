@@ -3,7 +3,7 @@ import { Users } from "lucide-react";
 import { FunnelService } from "../services/AppServices";
 import { BASE_URL } from "../infrastructure/api/config";
 
-export default function LeadsView({ funnelId, clientId, onBack }) {
+export default function LeadsView({ funnelId, clientId, subId, onBack }) {
   const [leads, setLeads] = useState([]);
   const [funnel, setFunnel] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,8 +11,8 @@ export default function LeadsView({ funnelId, clientId, onBack }) {
   useEffect(() => {
     if (!funnelId || !clientId) return;
     Promise.all([
-      FunnelService.getLeads(funnelId, clientId),
-      FunnelService.getFunnelById(funnelId, clientId),
+      FunnelService.getLeads(funnelId, clientId, subId),
+      FunnelService.getFunnelById(funnelId, clientId, subId),
     ]).then(([leadsData, funnelData]) => {
       setLeads(leadsData.leads || []);
       const fData = funnelData.funnel;
@@ -82,8 +82,8 @@ export default function LeadsView({ funnelId, clientId, onBack }) {
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="text-slate-500 text-xs mb-3 font-semibold tracking-wide">ESTADO FUNNEL</div>
-          <div className={`text-base font-bold ${funnel?.status === 'published' ? 'text-green-500' : 'text-yellow-500'}`}>
-            {funnel?.status === 'published' ? '🟢 Publicado' : '🟡 Borrador'}
+          <div className={`text-base font-bold ${funnel?.is_published === 1 ? 'text-green-500' : 'text-yellow-500'}`}>
+            {funnel?.is_published === 1 ? '🟢 Publicado' : '🟡 Borrador'}
           </div>
         </div>
       </div>

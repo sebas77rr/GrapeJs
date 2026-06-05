@@ -18,8 +18,26 @@ export function AppProvider({ children }) {
   const [backendError, setBackendError] = useState(false);
   const [currentSubId, setCurrentSubId] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(null); // null = cargando
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [kiuflowUser, setKiuflowUser] = useState(null);
+  const [sidebarColor, setSidebarColor] = useState('#E94A6E'); // color por defecto rosa KiuFlow
+
+  // Mapa de colores de KiuFlow -> color hex del sidebar
+  const THEME_COLOR_MAP = {
+    pink:   '#E94A6E',
+    teal:   '#0d9488',
+    blue:   '#2563eb',
+    corporate: '#2563eb',
+    purple: '#7c3aed',
+    green:  '#16a34a',
+    orange: '#ea580c',
+    red:    '#dc2626',
+    gray:   '#475569',
+    slate:  '#475569',
+    dark:   '#1e293b', 
+    indigo: '#4f46e5',
+    cyan:   '#0891b2',
+  };
 
 
   /**
@@ -59,6 +77,17 @@ export function AppProvider({ children }) {
         if (data.connected) {
           setIsAuthenticated(true);
           setKiuflowUser(data.user || null);
+
+          // Obtener configuración de tema del usuario desde KiuFlow
+          try {
+            const settingsRes = await fetch(`${API_URL}/kiuflow/user-settings`);
+            const settingsData = await settingsRes.json();
+            const colorTheme = settingsData?.theme_colorTheme || 'pink';
+            const hex = THEME_COLOR_MAP[colorTheme] || '#E94A6E';
+            setSidebarColor(hex);
+          } catch {
+            // Si falla, mantiene el color por defecto
+          }
         } else {
           setIsAuthenticated(false);
         }
@@ -82,13 +111,33 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetch("http://localhost:3001/api/kiuflow/subscriptions")
+    
+    const params = new URLSearchParams(window.location.search);
+    const urlSubId = params.get("sub_id") || params.get("suscription_id");
+
+    fetch(`${API_URL}/kiuflow/subscriptions`)
       .then((r) => r.json())
       .then((data) => {
-        setSubscriptions(data.subscriptions || []);
-        const def =
-          data.subscriptions.find((s) => s.id === 117) || data.subscriptions[0];
+        const subs = data.subscriptions || [];
+        setSubscriptions(subs);
+        
+        let def;
+        if (urlSubId) {
+          def = subs.find((s) => s.id === parseInt(urlSubId, 10));
+        }
+        if (!def) {
+          def = subs.find((s) => s.id === 117) || subs[0];
+        }
+        
         if (def) setCurrentSubId(def.id);
+        
+        if (urlSubId) {
+          const paramsToKeep = new URLSearchParams(window.location.search);
+          paramsToKeep.delete("sub_id");
+          paramsToKeep.delete("suscription_id");
+          const search = paramsToKeep.toString() ? `?${paramsToKeep.toString()}` : "";
+          window.history.replaceState({}, document.title, window.location.pathname + search);
+        }
       })
       .catch(() => {});
   }, [isAuthenticated]);
@@ -126,6 +175,7 @@ export function AppProvider({ children }) {
         subscriptions,
         isAuthenticated,
         kiuflowUser,
+        sidebarColor,
       }}
     >
       {children}

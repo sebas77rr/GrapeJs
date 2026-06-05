@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "date-fns": "^4.4.0",
     "framer-motion": "^12.40.0",
     "grapesjs": "^0.22.16",
     "grapesjs-blocks-basic": "^1.0.2",
