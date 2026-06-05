@@ -591,9 +591,27 @@ export default function FunnelWizardView({ clientId, subId, funnelId, onBack }) 
                       </div>
 
                       {!reminders[`${r.key}_templateId`] && (
-                        <div>
-                          <label className="text-slate-600 text-xs block mb-1 font-semibold">Mensaje Personalizado</label>
-                          <textarea className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 text-sm outline-none min-h-[60px]" placeholder="Hola, te recordamos..." value={reminders[`${r.key}_text`]} onChange={e => updateReminder(`${r.key}_text`, e.target.value)} />
+                        <div className="flex flex-col md:flex-row gap-4 items-start mt-2">
+                          <div className="flex-1 w-full">
+                            <label className="text-slate-600 text-xs block mb-1 font-semibold">Mensaje Personalizado</label>
+                            <textarea className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 text-sm outline-none min-h-[100px]" placeholder="Hola, te recordamos..." value={reminders[`${r.key}_text`]} onChange={e => updateReminder(`${r.key}_text`, e.target.value)} />
+                          </div>
+                          
+                          {/* VISTA PREVIA TIPO WHATSAPP */}
+                          <div className="w-full md:w-[260px] shrink-0 bg-[#efeae2] rounded-xl overflow-hidden shadow-inner border border-slate-200 flex flex-col md:mt-5 relative bg-[url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover bg-center">
+                            <div className="bg-[#075E54] text-white px-3 py-2 text-[12px] font-bold flex items-center gap-2 shadow-md z-10">
+                              <MessageSquare size={14} />
+                              Vista Previa
+                            </div>
+                            <div className="p-3 bg-white/20 backdrop-blur-[1px] flex-1">
+                              <div className="bg-white p-2.5 rounded-xl rounded-tl-sm shadow-sm text-[13.5px] relative">
+                                <p className="whitespace-pre-line break-words text-slate-800 leading-relaxed">
+                                  {reminders[`${r.key}_text`] ? reminders[`${r.key}_text`] : <span className="opacity-40 italic">Tu mensaje aparecerá aquí...</span>}
+                                </p>
+                                <div className="text-[10px] text-slate-400 text-right mt-1.5 font-medium">12:00 PM</div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
 
