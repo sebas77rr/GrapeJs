@@ -123,9 +123,10 @@ router.get("/:funnelId/leads", async (req, res) => {
      */
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const clients = await kiuflowService.getClients(subIdToUse);
+    const safeClients = Array.isArray(clients) ? clients : [];
     
     // Filtrado de Leads correspondientes a este embudo
-    const funnelLeads = clients.filter(c => {
+    const funnelLeads = safeClients.filter(c => {
       const cFields = c.customFields || c.custom_fields || {};
       const source = cFields.leadSource || cFields.lead_source || c.source || '';
       return String(source) === String(funnelId);
