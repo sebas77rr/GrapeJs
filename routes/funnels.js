@@ -64,7 +64,7 @@ router.get("/:id", async (req, res) => {
       title: kfPage.name,
       url: kfPage.url,
       public_slug: slug,
-      is_published: kfPage.published === "true" ? 1 : 0,
+      is_published: (kfPage.published === true || kfPage.published === "true") ? 1 : 0,
       ...(kfPage.jsonData || {}),
     };
 

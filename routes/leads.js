@@ -35,10 +35,13 @@ router.post("/:funnelId/leads", async (req, res) => {
       phone = '57' + phone;
     }
 
-    const customFields = { leadSource: funnelId };
+    const customFieldsArray = [
+      { name: "leadSource", value: String(funnelId) }
+    ];
+    
     for (const key in data) {
       if (!['nombre','name','telefono','phone','email','correo'].includes(key)) {
-        customFields[key] = data[key];
+        customFieldsArray.push({ name: key, value: String(data[key]) });
       }
     }
     
@@ -47,8 +50,8 @@ router.post("/:funnelId/leads", async (req, res) => {
       phone,
       email,
       source: funnelId,
-      customFields,
-      custom_fields: customFields
+      customFields: customFieldsArray,
+      custom_fields: customFieldsArray
     };
 
     /**
@@ -125,13 +128,30 @@ router.get("/:funnelId/leads", async (req, res) => {
     const clients = await kiuflowService.getClients(subIdToUse);
     const safeClients = Array.isArray(clients) ? clients : [];
     
+    // Helper para extraer un custom field dado su nombre (soporta array de objetos o un objeto directo)
+    const getCustomField = (client, fieldName) => {
+      const cFields = client.customFields || client.custom_fields;
+      if (Array.isArray(cFields)) {
+        const field = cFields.find(f => f.name === fieldName);
+        return field ? field.value : undefined;
+      }
+      return cFields ? cFields[fieldName] : undefined;
+    };
+
     // Filtrado de Leads correspondientes a este embudo
     const funnelLeads = safeClients.filter(c => {
-      const cFields = c.customFields || c.custom_fields || {};
-      const source = cFields.leadSource || cFields.lead_source || c.source || '';
+      const source = getCustomField(c, 'leadSource') || getCustomField(c, 'lead_source') || c.source || '';
       return String(source) === String(funnelId);
     }).map(c => {
-      const cFields = c.customFields || c.custom_fields || {};
+      // Convertir el array de customFields en un objeto simple para el map
+      const fieldsObj = {};
+      const cFields = c.customFields || c.custom_fields;
+      if (Array.isArray(cFields)) {
+        cFields.forEach(f => fieldsObj[f.name] = f.value);
+      } else if (typeof cFields === 'object' && cFields !== null) {
+        Object.assign(fieldsObj, cFields);
+      }
+
       return {
         id: c.id,
         created_at: c.createdAt || c.created_at || new Date().toISOString(),
@@ -139,7 +159,7 @@ router.get("/:funnelId/leads", async (req, res) => {
           nombre: c.name,
           telefono: c.phone,
           email: c.email,
-          ...cFields
+          ...fieldsObj
         }
       };
     });
