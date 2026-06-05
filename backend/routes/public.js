@@ -77,7 +77,7 @@ router.post("/api/public/appointment/confirm", async (req, res) => {
     }
     
     // Update appointment as confirmed
-    await kiuflowService.updateAppointment(appointment_id, { confirmed: true, attended: "false" }, sub_id);
+    await kiuflowService.updateAppointment(appointment_id, { confirmed: "true", attended: "false" }, sub_id);
     res.json({ ok: true });
   } catch (error) {
     console.error("Error confirmando cita:", error.message);
@@ -96,7 +96,7 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
     // 1. Update the appointment with the new date
     const updatedAppt = await kiuflowService.updateAppointment(appointment_id, { 
       date, 
-      confirmed: true 
+      confirmed: "true" 
     }, sub_id);
 
     // 2. Fetch all reminders for this subscription
