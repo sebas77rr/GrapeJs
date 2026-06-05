@@ -217,9 +217,14 @@ function renderFunnelLanding(funnel) {
     }
     ${funnel.video_mode === 'fullscreen' ? `
     body { background: #000; }
-    .container { max-width: 1000px; width: 100%; padding: 0; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
+    .container { max-width: 1000px; width: 100%; padding: 0 10px; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
     .video-card { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; }
-    .video-wrapper { border-radius: 0; max-width: 100% !important; }
+    .video-wrapper { 
+      border-radius: 0; 
+      ${funnel.video_orientation === 'vertical' 
+          ? `padding-bottom: 0 !important; height: 70vh; width: calc(70vh * 9 / 16); max-width: 100% !important; margin: 0 auto;` 
+          : `max-width: 100% !important; max-height: 75vh;`}
+    }
     .video-wrapper iframe, .video-wrapper video { border-radius: 0; }
     .progress-row { margin-top: 20px; padding: 0 20px; }
     .cta-wrap { margin-top: 20px; padding-bottom: 30px; }
@@ -228,7 +233,7 @@ function renderFunnelLanding(funnel) {
 </head>
 <body class="theme-${funnel.theme || 'dark'}">
   <div class="container">
-    ${funnel.logo_url && funnel.video_mode !== 'fullscreen' ? `<img src="${funnel.logo_url}" alt="Logo" class="funnel-logo" />` : ""}
+    ${funnel.logo_url ? `<img src="${funnel.logo_url}" alt="Logo" class="funnel-logo" />` : ""}
     ${funnel.video_mode !== 'fullscreen' ? `
       <div class="eyebrow">✦ Contenido exclusivo</div>
       <h1 class="title">${escapeHtml(funnel.title)}</h1>
