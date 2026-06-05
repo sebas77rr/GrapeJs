@@ -151,7 +151,9 @@ function renderFunnelLanding(funnel) {
     }
     .video-wrapper {
       position: relative; width: 100%; 
-      ${funnel.video_orientation === 'vertical' ? `max-width: 400px; margin: 0 auto; padding-bottom: 177.78%;` : `padding-bottom: 56.25%;`}
+      ${funnel.video_orientation === 'vertical' 
+          ? `width: min(100%, 400px, calc(70vh * 9 / 16)); height: auto; aspect-ratio: 9/16; margin: 0 auto;` 
+          : `padding-bottom: 56.25%;`}
       border-radius: 14px; overflow: hidden; background: #000;
     }
     .video-wrapper iframe, .video-wrapper video {
