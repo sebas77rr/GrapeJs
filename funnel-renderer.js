@@ -218,7 +218,7 @@ function renderFunnelLanding(funnel) {
       object-fit: contain;
     }
     ${funnel.video_mode === 'fullscreen' ? `
-    body { background: #000; }
+    /* body { background: #000; } removed so bg_image shows */
     .container { max-width: 1000px; width: 100%; padding: 0 10px; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
     .video-card { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; }
     .video-wrapper { 
