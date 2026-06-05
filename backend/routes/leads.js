@@ -181,7 +181,21 @@ router.get("/:funnelId/leads/export", async (req, res) => {
   try {
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const clients = await kiuflowService.getClients(subIdToUse);
-    const leads = clients.filter(c => c.customFields && c.customFields.leadSource === funnelId);
+    
+    // Usar la misma lógica de filtrado que en el GET normal
+    const getCustomField = (client, fieldName) => {
+      const cFields = client.customFields || client.custom_fields;
+      if (Array.isArray(cFields)) {
+        const field = cFields.find(f => f.name === fieldName);
+        return field ? field.value : undefined;
+      }
+      return cFields ? cFields[fieldName] : undefined;
+    };
+
+    const leads = clients.filter(c => {
+      const source = getCustomField(c, 'leadSource') || getCustomField(c, 'lead_source') || c.source || '';
+      return String(source) === String(funnelId);
+    });
 
     const csvRows = [];
     
@@ -189,24 +203,47 @@ router.get("/:funnelId/leads/export", async (req, res) => {
       // Recolectar todas las posibles llaves para las cabeceras
       let allKeys = new Set(['id', 'fecha', 'nombre', 'telefono', 'email']);
       leads.forEach(c => {
-        if (c.customFields) {
-          Object.keys(c.customFields).forEach(k => allKeys.add(k));
+        const cFields = c.customFields || c.custom_fields;
+        if (Array.isArray(cFields)) {
+          cFields.forEach(f => allKeys.add(f.name));
+        } else if (typeof cFields === 'object' && cFields !== null) {
+          Object.keys(cFields).forEach(k => allKeys.add(k));
         }
       });
       const headers = Array.from(allKeys);
       csvRows.push(headers.join(','));
 
       for (const lead of leads) {
+        // Objeto unificado
+        const fieldsObj = {};
+        const cFields = lead.customFields || lead.custom_fields;
+        if (Array.isArray(cFields)) {
+          cFields.forEach(f => fieldsObj[f.name] = f.value);
+        } else if (typeof cFields === 'object' && cFields !== null) {
+          Object.assign(fieldsObj, cFields);
+        }
+
         const rowData = {
-          id: lead.id,
-          fecha: new Date(lead.createdAt || Date.now()).toISOString(),
-          nombre: lead.name,
-          telefono: lead.phone,
-          email: lead.email,
-          ...(lead.customFields || {})
+          id: lead.id || '',
+          fecha: lead.createdAt || lead.created_at || '',
+          nombre: lead.name || '',
+          telefono: lead.phone || '',
+          email: lead.email || '',
+          ...fieldsObj
         };
-        const row = headers.map(k => `"${(rowData[k] || '').toString().replace(/"/g, '""')}"`);
-        csvRows.push(row.join(','));
+
+        const rowValues = headers.map(h => {
+          let val = rowData[h] || '';
+          // Limpiar el valor para CSV
+          if (typeof val === 'string') {
+            val = val.replace(/"/g, '""');
+            if (val.includes(',') || val.includes('\n')) {
+              val = `"${val}"`;
+            }
+          }
+          return val;
+        });
+        csvRows.push(rowValues.join(','));
       }
     }
 
