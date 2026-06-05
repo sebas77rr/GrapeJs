@@ -46,16 +46,15 @@ router.post("/:funnelId/leads", async (req, res) => {
       name,
       phone,
       email,
-      source: funnelId, // Usar el campo source nativo si KiuFlow lo soporta
+      source: funnelId,
       customFields,
-      custom_fields: customFields // Enviar ambos formatos para asegurar compatibilidad
+      custom_fields: customFields
     };
 
     /**
      * Paso 2: Sincronización con el CRM
      * Registra el cliente (Lead) en el repositorio central de KiuFlow.
      */
-    // clientData ya se configuró arriba
 
     // Si el funnel tiene un channelId principal configurado, se lo asignamos
     if (funnel.jsonData && funnel.jsonData.defaultChannelId) {
