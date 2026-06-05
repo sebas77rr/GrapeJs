@@ -340,14 +340,16 @@ export default function CallPortal() {
                 Entrar a Google Meet
               </a>
             ) : (
-              <div className="w-full p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col items-center justify-center gap-1">
-                <div className="text-indigo-600 text-sm font-semibold mb-1">Tu enlace de Meet se activará en:</div>
-                <div className="text-2xl font-black text-indigo-700 tracking-tight tabular-nums">
-                  {timeLeft !== null ? formatCountdown(timeLeft - THREE_HOURS_MS) : "..."}
-                </div>
+            <div className="w-full p-5 bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2">
+              <div className="text-slate-500 text-sm font-medium">El acceso a la reunión se activará en</div>
+              <div className="text-3xl font-black text-slate-800 tracking-tight tabular-nums">
+                {timeLeft !== null ? formatCountdown(timeLeft - THREE_HOURS_MS) : "..."}
               </div>
-            )}
-          </div>
+              <div className="text-slate-400 text-xs mt-1">(3 horas antes de la cita)</div>
+            </div>
+          )}
+
+      </div>
         )}
 
       </div>

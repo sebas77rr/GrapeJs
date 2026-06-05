@@ -210,13 +210,30 @@ function renderFunnelLanding(funnel) {
       .video-card { padding: 10px; border-radius: 18px; }
       .cta-btn { padding: 16px 32px; font-size: 0.95rem; width: 100%; justify-content: center; border-radius: 16px; }
     }
+    .funnel-logo {
+      max-height: 60px; max-width: 200px;
+      margin: 0 auto 20px auto; display: block;
+      object-fit: contain;
+    }
+    ${funnel.video_mode === 'fullscreen' ? `
+    body { background: #000; }
+    .container { max-width: 1000px; width: 100%; padding: 0; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
+    .video-card { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; }
+    .video-wrapper { border-radius: 0; max-width: 100% !important; }
+    .video-wrapper iframe, .video-wrapper video { border-radius: 0; }
+    .progress-row { margin-top: 20px; padding: 0 20px; }
+    .cta-wrap { margin-top: 20px; padding-bottom: 30px; }
+    ` : ''}
   </style>
 </head>
 <body class="theme-${funnel.theme || 'dark'}">
   <div class="container">
-    <div class="eyebrow">✦ Contenido exclusivo</div>
-    <h1 class="title">${escapeHtml(funnel.title)}</h1>
-    ${funnel.highlight_text ? `<p class="highlight">${escapeHtml(funnel.highlight_text)}</p>` : ""}
+    ${funnel.logo_url && funnel.video_mode !== 'fullscreen' ? `<img src="${funnel.logo_url}" alt="Logo" class="funnel-logo" />` : ""}
+    ${funnel.video_mode !== 'fullscreen' ? `
+      <div class="eyebrow">✦ Contenido exclusivo</div>
+      <h1 class="title">${escapeHtml(funnel.title)}</h1>
+      ${funnel.highlight_text ? `<p class="highlight">${escapeHtml(funnel.highlight_text)}</p>` : ""}
+    ` : ""}
     <div class="video-card">
       ${playerHTML}
       <div class="progress-row">

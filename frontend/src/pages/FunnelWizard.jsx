@@ -229,6 +229,11 @@ export default function FunnelWizardView({ clientId, subId, funnelId, onBack }) 
                     </div>
                   </div>
                 </div>
+
+                <div className="mt-4">
+                  <label className="text-slate-500 text-xs block mb-2 font-semibold">Logo URL (Opcional)</label>
+                  <input className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm outline-none focus:border-sidebar" placeholder="https://ejemplo.com/logo.png" value={form.logo_url || ''} onChange={e => update('logo_url', e.target.value)} />
+                </div>
               </div>
 
               <div className="border-t border-slate-200 pt-4">
@@ -338,6 +343,20 @@ export default function FunnelWizardView({ clientId, subId, funnelId, onBack }) 
                 }} 
               />
               
+              <div className="mt-4 flex items-center gap-3">
+                <input 
+                  type="checkbox" 
+                  id="fullscreen_video"
+                  checked={form.video_mode === 'fullscreen'}
+                  onChange={e => update('video_mode', e.target.checked ? 'fullscreen' : 'normal')}
+                  className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500"
+                />
+                <label htmlFor="fullscreen_video" className="text-sm text-slate-700 font-medium cursor-pointer">
+                  Mostrar video en Pantalla Completa
+                  <p className="text-xs text-slate-500 font-normal mt-0.5">Ignora la barra de progreso y muestra solo el video gigante.</p>
+                </label>
+              </div>
+
               {/* Vista previa del video */}
               {form.video_url && (
                 <div className="mt-5 border border-slate-200 rounded-xl overflow-hidden bg-slate-900 shadow-sm">
