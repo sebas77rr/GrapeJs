@@ -60,6 +60,7 @@ router.get("/api/public/appointment", async (req, res) => {
         agentPhoto: nextAppt.agent?.profileImageUrl || null,
         meetingUrl: nextAppt.meetingUrl || null,
         meetingProvider: nextAppt.meetingProvider || null,
+        confirmed: nextAppt.confirmed,
       }
     });
 
