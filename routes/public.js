@@ -128,9 +128,9 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
         const msHastaCita = citaDate - ahora;
 
         const offsets = [
-          msHastaCita - 24 * 3600000, // R2: 24h antes
-          msHastaCita - 3 * 3600000, // R3: 3h antes
-          msHastaCita - 5 * 60000, // R4: 5 mins antes
+          2 * 60000, // R2: a los 2 minutos (prueba)
+          4 * 60000, // R3: a los 4 minutos (prueba)
+          6 * 60000, // R4: a los 6 minutos (prueba)
         ];
 
         for (let i = 0; i < offsets.length; i++) {
