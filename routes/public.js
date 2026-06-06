@@ -95,9 +95,14 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
     }
 
     // 1. Update the appointment with the new date
+    const newStartDate = new Date(date);
+    const newEndDate = new Date(newStartDate.getTime() + 30 * 60000); // Asumimos 30 min por defecto
     const updatedAppt = await kiuflowService.updateAppointment(appointment_id, { 
       date,
-      startDate: date, // Algunos endpoints de KiuFlow usan startDate en vez de date para updates
+      startDate: date,
+      endDate: newEndDate.toISOString(),
+      start: date,
+      end: newEndDate.toISOString(),
       confirmed: "true" 
     }, sub_id);
 
