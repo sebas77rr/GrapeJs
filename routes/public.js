@@ -96,7 +96,8 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
 
     // 1. Update the appointment with the new date
     const updatedAppt = await kiuflowService.updateAppointment(appointment_id, { 
-      date, 
+      date,
+      startDate: date, // Algunos endpoints de KiuFlow usan startDate en vez de date para updates
       confirmed: "true" 
     }, sub_id);
 
