@@ -26,6 +26,11 @@ async function post(endpoint, data = {}) {
     return response.data.data;
   } catch (error) {
     if (error.response) {
+      if (error.response.status === 401) {
+        const { clearExternalToken } = require("./kiuflowAuth");
+        clearExternalToken();
+        throw new Error("AUTH_EXPIRED");
+      }
       console.error(
         `Error de API KiuFlow en ${endpoint}:`,
         error.response.data,
@@ -58,6 +63,11 @@ async function get(endpoint) {
     return response.data.data;
   } catch (error) {
     if (error.response) {
+      if (error.response.status === 401) {
+        const { clearExternalToken } = require("./kiuflowAuth");
+        clearExternalToken();
+        throw new Error("AUTH_EXPIRED");
+      }
       console.error(
         `Error de API KiuFlow en ${endpoint}:`,
         error.response.data,
