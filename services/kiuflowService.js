@@ -2,8 +2,8 @@ const axios = require("axios");
 const { getValidToken } = require("./kiuflowAuth");
 require("dotenv").config();
 
-const API_URL = process.env.KIUFLOW_API_URL;
-const SUB_ID = process.env.KIUFLOW_SUBSCRIPTION_ID;
+const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
+const SUB_ID = process.env.KIUFLOW_SUBSCRIPTION_ID || 117;
 
 /**
  * Función base para llamadas POST a la API de KiuFlow

@@ -1,7 +1,7 @@
 const axios = require('axios');
 require('dotenv').config();
 
-const KIUFLOW_API_URL = process.env.KIUFLOW_API_URL;
+const KIUFLOW_API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
 const KIUFLOW_USERNAME = process.env.KIUFLOW_USERNAME;
 const KIUFLOW_PASSWORD = process.env.KIUFLOW_PASSWORD;
 
