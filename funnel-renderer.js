@@ -152,13 +152,14 @@ function renderFunnelLanding(funnel) {
     .video-wrapper {
       position: relative; width: 100%; 
       ${funnel.video_orientation === 'vertical' 
-          ? `width: min(100%, 400px, calc(70vh * 9 / 16)); height: auto; aspect-ratio: 9/16; margin: 0 auto;` 
-          : `padding-bottom: 56.25%;`}
+          ? `max-width: 400px; aspect-ratio: 9/16; margin: 0 auto; height: auto; padding-bottom: 0;` 
+          : `aspect-ratio: 16/9; margin: 0 auto; padding-bottom: 0;`}
       border-radius: 14px; overflow: hidden; background: #000;
+      display: flex; align-items: center; justify-content: center;
     }
     .video-wrapper iframe, .video-wrapper video {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      border: none; border-radius: 14px;
+      border: none; border-radius: 14px; object-fit: contain;
     }
     .progress-row {
       display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 0 4px;
@@ -218,16 +219,15 @@ function renderFunnelLanding(funnel) {
       object-fit: contain;
     }
     ${funnel.video_mode === 'fullscreen' ? `
-    /* body { background: #000; } removed so bg_image shows */
-    .container { max-width: 1000px; width: 100%; padding: 0 10px; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
-    .video-card { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; }
+    .container { max-width: 1000px; width: 100%; padding: 0 10px; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; margin: 0 auto; }
+    .video-card { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; width: 100%; max-width: 100%; }
     .video-wrapper { 
-      border-radius: 0; 
+      border-radius: 0; background: transparent;
       ${funnel.video_orientation === 'vertical' 
-          ? `padding-bottom: 0 !important; height: 70vh; width: calc(70vh * 9 / 16); max-width: 100% !important; margin: 0 auto;` 
-          : `max-width: 100% !important; max-height: 75vh;`}
+          ? `max-width: 450px !important; width: 100%; aspect-ratio: 9/16; height: auto; max-height: 80vh; margin: 0 auto;` 
+          : `width: 100%; max-width: 900px; aspect-ratio: 16/9; height: auto; max-height: 80vh; margin: 0 auto;`}
     }
-    .video-wrapper iframe, .video-wrapper video { border-radius: 0; }
+    .video-wrapper iframe, .video-wrapper video { border-radius: 0; object-fit: contain; }
     .progress-row { margin-top: 20px; padding: 0 20px; }
     .cta-wrap { margin-top: 20px; padding-bottom: 30px; }
     ` : ''}
