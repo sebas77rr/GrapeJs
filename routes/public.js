@@ -108,7 +108,8 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
 
     // 2. Fetch all reminders for this subscription
     try {
-      const allReminders = await kiuflowService.getReminders(sub_id);
+      const remindersRes = await kiuflowService.getReminders(sub_id);
+      const allReminders = Array.isArray(remindersRes) ? remindersRes : (remindersRes.reminders || remindersRes.data || []);
       
       // Filter pending reminders that belong to this client and cancel them
       const clientReminders = allReminders.filter(r => 

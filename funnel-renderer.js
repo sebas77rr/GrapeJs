@@ -872,8 +872,14 @@ function renderFunnelForm(funnel) {
     }
 
     // ── Select slot ──
-    function selectSlot(startDate, startTime, el) {
-      selectedSlot = { startDate: startDate, startTime: startTime };
+    function selectSlot(startDateStr, startTime, el) {
+      // Ensure we don't end up with HH:MM:00:00
+      var safeTime = startTime.length > 5 ? startTime.substring(0, 5) : startTime;
+      var cleanStartDate = startDateStr;
+      if (startDateStr.length > 16) {
+        cleanStartDate = startDateStr.substring(0, 10) + 'T' + safeTime + ':00';
+      }
+      selectedSlot = { startDate: cleanStartDate, startTime: safeTime };
       document.querySelectorAll('.slot-btn').forEach(function(b) { b.classList.remove('selected'); });
       el.classList.add('selected');
       var summary = document.getElementById('selectionSummary');
