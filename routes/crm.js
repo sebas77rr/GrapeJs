@@ -7,7 +7,6 @@ router.get("/channels", async (req, res) => {
   try {
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const channels = await kiuflowService.getChannels(subIdToUse);
-    //console.log("CANALES RAW:", JSON.stringify(channels[0], null, 2));
     // solo canales WhatsApp
     const whatsappChannels = channels.filter(
       (c) => c.type?.name === "WhatsApp",
@@ -28,7 +27,6 @@ router.get("/templates", async (req, res) => {
     }
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const templates = await kiuflowService.getTemplates(channelId, subIdToUse);
-    //console.log("TEMPLATES RAW:", JSON.stringify(templates, null, 2));
     res.json({ templates });
   } catch (error) {
     console.error("ERROR templates:", error.message);

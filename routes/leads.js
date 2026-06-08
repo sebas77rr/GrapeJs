@@ -77,7 +77,6 @@ router.post("/:funnelId/leads", async (req, res) => {
       
       if (existingClient) {
         clientId = existingClient.id;
-        console.log("Cliente existente encontrado. Continuando flujo con ID:", clientId);
       } else {
         throw err; // Si no es duplicado o no se encuentra, lanzar error original
       }
