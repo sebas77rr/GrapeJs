@@ -363,6 +363,7 @@ function renderFunnelForm(funnel) {
   <title>${escapeHtml(funnel.title)} — Agenda tu cita</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>window.KF_PUBLIC_JWT = "${funnel.jwt || ''}";</script>
   <style>
     :root {
       --accent: ${funnel.cta_color || '#6366f1'};
