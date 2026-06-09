@@ -10,7 +10,6 @@ router.post("/:funnelId/leads", async (req, res) => {
   if (!data) return res.status(400).json({ error: "Faltan datos del formulario" });
 
   try {
-    /**
     const subIdToUse = req.query.sub_id || req.body.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const { channelId, reminders } = req.body;
     const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
