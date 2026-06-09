@@ -109,8 +109,8 @@ router.post("/:funnelId/leads", async (req, res) => {
 
     res.status(201).json({ ok: true, lead: { id: clientId, ...data } });
   } catch (error) {
-    console.error("Error procesando lead en KiuFlow:", error.message);
-    res.status(500).json({ error: "Error procesando el lead" });
+    console.error("Error al procesar el lead:", error.message);
+    res.status(500).json({ error: error.message || "Error interno al procesar el lead" });
   }
 });
 
