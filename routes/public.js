@@ -212,48 +212,6 @@ router.get(/^\/f\/(?!.*\/form$).+/, async (req, res) => {
 
     const kfResponse = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
     if (!kfResponse.data || !kfResponse.data.data) {
-      return res.status(404).send("<h1>Video Funnel no encontrado</h1>");
-    }
-
-    const funnelPage = kfResponse.data.data;
-
-    if (funnelPage.published !== true && funnelPage.published !== "true") {
-      return res.status(403).send("<h1>Este embudo no est&aacute; publicado</h1>");
-    }
-
-    const funnel = {
-      id: funnelPage.id,
-      title: funnelPage.name,
-      video_url: funnelPage.jsonData?.video_url,
-      video_type: funnelPage.jsonData?.video_type,
-      bg_color: funnelPage.jsonData?.bg_color,
-      text_color: funnelPage.jsonData?.text_color,
-      cta_text: funnelPage.jsonData?.cta_text,
-      cta_color: funnelPage.jsonData?.cta_color,
-      video_threshold: funnelPage.jsonData?.video_threshold,
-      sub_id: funnelPage.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID,
-      public_slug: code + "/" + (parts[3] || "funnel"),
-      jwt: funnelPage.jwt
-    };
-
-    const html = renderFunnelLanding(funnel);
-    res.send(html);
-  } catch (error) {
-    console.error("Error public funnel:", error.message);
-    res.status(500).send("<h1>Error cargando funnel</h1>");
-  }
-});
-
-// GET /f/**/form (Formulario del Funnel - maneja slugs con múltiples segmentos)
-router.get(/^\/f\/.+\/form$/, async (req, res) => {
-  try {
-    const parts = req.path.split("/");
-    const code = parts[2];
-    if (!code) return res.status(404).send("<h1>Formulario no encontrado</h1>");
-
-    const kfResponse = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
-    if (!kfResponse.data || !kfResponse.data.data) {
-      return res.status(404).send("<h1>Formulario no encontrado</h1>");
     }
 
     const funnelPage = kfResponse.data.data;
