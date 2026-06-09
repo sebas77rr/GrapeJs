@@ -168,7 +168,7 @@ router.get("/p/*", async (req, res) => {
     const code = parts[2];
     if (!code) return res.status(404).send("<h1>Landing Page no encontrada</h1>");
 
-    const kfResponse = await axios.get(`${API_URL}/api/v1/webpage/${code}/get`);
+    const kfResponse = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
     if (!kfResponse.data || !kfResponse.data.data) {
       return res.status(404).send("<h1>Landing Page no encontrada</h1>");
     }
@@ -210,7 +210,7 @@ router.get(/^\/f\/(?!.*\/form$).+/, async (req, res) => {
     const code = parts[2];
     if (!code) return res.status(404).send("<h1>Video Funnel no encontrado</h1>");
 
-    const kfResponse = await axios.get(`${API_URL}/api/v1/webpage/${code}/get`);
+    const kfResponse = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
     if (!kfResponse.data || !kfResponse.data.data) {
       return res.status(404).send("<h1>Video Funnel no encontrado</h1>");
     }
@@ -251,7 +251,7 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
     const code = parts[2];
     if (!code) return res.status(404).send("<h1>Formulario no encontrado</h1>");
 
-    const kfResponse = await axios.get(`${API_URL}/api/v1/webpage/${code}/get`);
+    const kfResponse = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
     if (!kfResponse.data || !kfResponse.data.data) {
       return res.status(404).send("<h1>Formulario no encontrado</h1>");
     }
