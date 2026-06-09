@@ -3,11 +3,18 @@ const router = express.Router();
 const kiuflowService = require("../services/kiuflowService");
 const { renderFunnelLanding, renderFunnelForm } = require("../funnel-renderer");
 
+const publicPagesCache = new Map();
+
 /**
  * Función auxiliar para buscar una página a través de todas las suscripciones
  * disponibles para el administrador actual.
  */
 async function findPageAcrossSubscriptions(fullPath, type) {
+  const cacheKey = `${type}_${fullPath}`;
+  if (publicPagesCache.has(cacheKey)) {
+    return publicPagesCache.get(cacheKey);
+  }
+
   try {
     const subs = await kiuflowService.getSuscriptions();
     for (const sub of subs) {
@@ -16,7 +23,9 @@ async function findPageAcrossSubscriptions(fullPath, type) {
         (p) => p.type === type && p.url && p.url.includes(fullPath)
       );
       if (page) {
-        return { page, subId: sub.id };
+        const result = { page, subId: sub.id };
+        publicPagesCache.set(cacheKey, result);
+        return result;
       }
     }
   } catch (err) {
@@ -24,6 +33,11 @@ async function findPageAcrossSubscriptions(fullPath, type) {
   }
   return null;
 }
+
+// Limpiar cache cada 5 minutos para reflejar cambios (opcional, pero buena práctica)
+setInterval(() => {
+  publicPagesCache.clear();
+}, 5 * 60 * 1000);
 
 // GET /api/public/appointment
 router.get("/api/public/appointment", async (req, res) => {
