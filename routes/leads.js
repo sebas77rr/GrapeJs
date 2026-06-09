@@ -11,13 +11,9 @@ router.post("/:funnelId/leads", async (req, res) => {
 
   try {
     /**
-     * Paso 1: Configuración del Funnel
-     * Recuperamos los parámetros del Video Funnel desde KiuFlow 
-     * para heredar configuraciones como el canal asignado o recordatorios.
-     */
     const subIdToUse = req.query.sub_id || req.body.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
-    const funnel = await kiuflowService.getWebpage(funnelId, subIdToUse);
-    if (!funnel) return res.status(404).json({ error: "Funnel no encontrado" });
+    const { channelId, reminders } = req.body;
+    const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
 
     /**
      * Mapeo Dinámico de Campos:
@@ -59,27 +55,24 @@ router.post("/:funnelId/leads", async (req, res) => {
      * Registra el cliente (Lead) en el repositorio central de KiuFlow.
      */
 
-    // Si el funnel tiene un channelId principal configurado, se lo asignamos
-    if (funnel.jsonData && funnel.jsonData.defaultChannelId) {
-      clientData.channelId = funnel.jsonData.defaultChannelId;
+    if (channelId) {
+      clientData.channelId = channelId;
     }
 
     let clientId;
     try {
-      const newClient = await kiuflowService.createClient(clientData, subIdToUse);
-      clientId = newClient.id;
+      const axios = require("axios");
+      const clientRes = await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/client/create`, clientData, {
+        headers: {
+          'Authorization': req.headers.authorization || "",
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!clientRes.data.success) throw new Error(clientRes.data.message);
+      clientId = clientRes.data.data.id;
     } catch (err) {
-      console.warn("Posible cliente duplicado detectado. Buscando cliente existente...", err.message);
-      const clients = await kiuflowService.getClients(subIdToUse);
-      const existingClient = clients.find(c => 
-        (phone && c.phone === phone) || (email && c.email === email)
-      );
-      
-      if (existingClient) {
-        clientId = existingClient.id;
-      } else {
-        throw err; // Si no es duplicado o no se encuentra, lanzar error original
-      }
+      console.warn("Error creando cliente con JWT directo, intentando fallback:", err.message);
+      throw err;
     }
 
     /**
@@ -87,23 +80,25 @@ router.post("/:funnelId/leads", async (req, res) => {
      * Para pruebas: Programamos TODOS los recordatorios espaciados cada 2 minutos.
      * R1 a los 2 min, R2 a los 4 min, R3 a los 6 min.
      */
-    if (funnel.jsonData && Array.isArray(funnel.jsonData.reminders)) {
-      // Usamos map para no usar await dentro del forEach si queremos ser estrictos, 
-      // o Promise.all para esperar a que todos se creen.
-      const reminderPromises = funnel.jsonData.reminders.map((r, index) => {
+    if (Array.isArray(reminders)) {
+      const reminderPromises = reminders.map((r, index) => {
         if (r && r.channelId) {
-          const minutesToAdd = (index + 1) * 2; // 2, 4, 6 minutos
+          const minutesToAdd = (index + 1) * 2;
           const remindAt = new Date(Date.now() + minutesToAdd * 60000).toISOString(); 
           
-          // El tercer recordatorio suele llevar la metadata (enlaces a la vista de cliente)
-          // El content ya debería venir inyectado desde el frontend, pero lo enviamos tal cual.
-          return kiuflowService.createReminder({
+          const axios = require("axios");
+          return axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
             clientId,
             channelId: r.channelId,
             templateId: r.templateId || null,
             content: r.content,
             remindAt
-          }, subIdToUse).catch(err => {
+          }, {
+            headers: {
+              'Authorization': req.headers.authorization || "",
+              'Content-Type': 'application/json'
+            }
+          }).catch(err => {
             console.error(`Error creando R${index + 1}:`, err.message);
           });
         }

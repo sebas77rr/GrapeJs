@@ -930,7 +930,8 @@ function renderFunnelForm(funnel) {
           clientId: clientId, 
           date: selectedSlot.startDate,
           funnelId: FUNNEL_ID,
-          sub_id: SUB_ID
+          sub_id: SUB_ID,
+          reminders: ${JSON.stringify(funnel.reminders || [])}
         })
       })
       .then(function(r) { return r.json(); })
@@ -1009,7 +1010,12 @@ function renderFunnelForm(funnel) {
       fetch('/api/funnels/' + FUNNEL_ID + '/leads', {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify({ data: data, sub_id: SUB_ID })
+        body: JSON.stringify({ 
+          data: data, 
+          sub_id: SUB_ID,
+          channelId: '${funnel.defaultChannelId || ""}',
+          reminders: ${JSON.stringify(funnel.reminders || [])}
+        })
       })
       .then(function(r) {
         if (!r.ok) return r.json().then(function(b) { throw new Error(b.error || 'Error al enviar'); });

@@ -75,25 +75,39 @@ router.post("/appointment", async (req, res) => {
       return res.status(400).json({ error: "clientId y date son requeridos" });
 
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
-    const agents = await kiuflowService.getAgents(subIdToUse);
-    if (!agents || agents.length === 0)
-      return res.status(400).json({ error: "No hay agentes disponibles" });
-    const agentId = String(agents[0].id);
+    const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
+    const axios = require("axios");
+    const authHeaders = {
+      'Authorization': req.headers.authorization || "",
+      'Content-Type': 'application/json'
+    };
 
-    const result = await kiuflowService.createAppointment({
+    let agentId = "";
+    try {
+      const agentsRes = await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/agent/list`, {}, { headers: authHeaders });
+      const agents = agentsRes.data?.data || [];
+      if (agents.length > 0) agentId = String(agents[0].id);
+    } catch (e) {
+      console.warn("No se pudieron obtener agentes, se enviará vacío", e.message);
+    }
+
+    const apptData = {
       clientId: String(clientId),
-      agentId,
       date,
       confirmed: "true",
       attended: "false",
       virtual: "true",
-    }, subIdToUse);
+    };
+    if (agentId) apptData.agentId = agentId;
+
+    const resultRes = await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/create`, apptData, { headers: authHeaders });
+    if (!resultRes.data.success) throw new Error(resultRes.data.message);
+    const result = resultRes.data.data;
 
     // Crear Recordatorios de cita R2, R3, R4 según flujo definido
-    if (funnelId) {
+    const { reminders } = req.body;
+    if (Array.isArray(reminders)) {
       try {
-        const funnel = await kiuflowService.getWebpage(funnelId, subIdToUse);
-        const reminders = funnel?.jsonData?.reminders || [];
         const citaDate = new Date(date);
         const ahora = new Date();
         const msHastaCita = citaDate - ahora;
@@ -111,13 +125,13 @@ router.post("/appointment", async (req, res) => {
 
           const remindAt = new Date(ahora.getTime() + offsets[i]).toISOString();
           try {
-            await kiuflowService.createReminder({
+            await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
               clientId: String(clientId),
               channelId: rem.channelId,
               templateId: rem.templateId || null,
               content: rem.content,
               remindAt,
-            }, subIdToUse);
+            }, { headers: authHeaders });
           } catch (err) {
             console.error(`Error creando R${i + 2}:`, err.message);
           }
