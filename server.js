@@ -2,14 +2,30 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { renderFunnelLanding, renderFunnelForm } = require("./funnel-renderer");
+const { AsyncLocalStorage } = require('async_hooks');
 
 const app = express();
 const PORT = 3001;
+
+const asyncLocalStorage = new AsyncLocalStorage();
+module.exports.asyncLocalStorage = asyncLocalStorage;
 
 // Middlewares básicos
 app.use(cors()); // Permitir todos los orígenes para no bloquear peticiones desde el frontend en producción
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+// Inyectar el token en el contexto de la petición
+app.use((req, res, next) => {
+  const authHeader = req.headers.authorization;
+  let token = null;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.substring(7);
+  }
+  asyncLocalStorage.run(token, () => {
+    next();
+  });
+});
 
 // ─────────────────────────────────────────────
 // Endpoints de autenticación SSO
@@ -17,29 +33,17 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 /**
  * POST /api/auth/set-token
- * El frontend llama a este endpoint al recibir el token de KiuFlow via URL param.
- * Almacena el JWT del usuario y lo usa para todas las llamadas a la API de KiuFlow.
+ * Compatibilidad hacia atrás: El frontend guarda el token localmente ahora.
  */
 app.post("/api/auth/set-token", (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ error: "Token requerido" });
-  
-  try {
-    const { setExternalToken } = require("./services/kiuflowAuth");
-    setExternalToken(token);
-    res.json({ ok: true, message: "Token registrado correctamente" });
-  } catch (e) {
-    res.status(500).json({ error: "Error al registrar token" });
-  }
+  res.json({ ok: true, message: "Token registrado localmente en el cliente" });
 });
 
 /**
  * POST /api/auth/logout
- * Limpia el token externo (cuando el usuario cierra sesión en KiuFlow)
+ * Compatibilidad hacia atrás: El frontend limpia su propio token ahora.
  */
 app.post("/api/auth/logout", (req, res) => {
-  const { clearExternalToken } = require("./services/kiuflowAuth");
-  clearExternalToken();
   res.json({ ok: true });
 });
 
