@@ -825,7 +825,11 @@ function renderFunnelForm(funnel) {
     function loadSlots(dateStr) {
       var container = document.getElementById('slotsContainer');
       container.innerHTML = '<div class="slots-loading"><div class="spinner"></div>Cargando horarios...</div>';
-      fetch('/api/crm/availability?date=' + dateStr + '&sub_id=' + SUB_ID)
+      fetch('/api/crm/availability?date=' + dateStr + '&sub_id=' + SUB_ID, {
+        headers: {
+          'Authorization': window.KF_PUBLIC_JWT ? 'Bearer ' + window.KF_PUBLIC_JWT : ''
+        }
+      })
         .then(function(r) { return r.json(); })
         .then(function(data) {
           var slots = data.slots || [];
@@ -916,9 +920,12 @@ function renderFunnelForm(funnel) {
       if (!clientId || !selectedSlot) return;
       var btn = document.getElementById('confirmBtn');
       btn.disabled = true; btn.textContent = 'Confirmando...';
+      var headers = { 'Content-Type': 'application/json' };
+      if (window.KF_PUBLIC_JWT) headers['Authorization'] = 'Bearer ' + window.KF_PUBLIC_JWT;
+      
       fetch('/api/crm/appointment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({ 
           clientId: clientId, 
           date: selectedSlot.startDate,
@@ -996,9 +1003,12 @@ function renderFunnelForm(funnel) {
         errorBox.classList.add('show'); return;
       }
       submitBtn.disabled = true; submitBtn.textContent = 'Enviando...';
+      var headers = { 'Content-Type': 'application/json' };
+      if (window.KF_PUBLIC_JWT) headers['Authorization'] = 'Bearer ' + window.KF_PUBLIC_JWT;
+
       fetch('/api/funnels/' + FUNNEL_ID + '/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({ data: data, sub_id: SUB_ID })
       })
       .then(function(r) {

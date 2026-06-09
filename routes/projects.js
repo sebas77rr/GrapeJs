@@ -85,13 +85,9 @@ router.post("/", async (req, res) => {
 
     const safeName = name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'landing';
     const domain = process.env.APP_DOMAIN || "https://builder-api.kiuflow.online";
-    const identifier = Date.now().toString(36);
-    const finalUrl = `${domain}/p/${identifier}/${safeName}`;
-
-
     const pageData = {
       name: name,
-      url: finalUrl,
+      url: `${domain}/p/tmp/${safeName}`, // URL temporal
       published: "true",
       type: "LANDING_PAGE",
       origin: process.env.APP_ORIGIN || "KiuFlow",
@@ -103,6 +99,11 @@ router.post("/", async (req, res) => {
     };
 
     const kfResponse = await kiuflowService.createWebpage(pageData, subIdToUse);
+    const code = kfResponse.code || identifier;
+    const finalUrl = `${domain}/p/${code}/${safeName}`;
+
+    // Actualizar la URL en KiuFlow con el código real
+    await kiuflowService.updateWebpage(kfResponse.id || kfResponse.pageId, { ...pageData, url: finalUrl }, subIdToUse);
 
     const project = {
       id: kfResponse.id || kfResponse.pageId || Date.now(),
@@ -110,7 +111,9 @@ router.post("/", async (req, res) => {
       client_id: "kiuflow_user",
       json_data: pageData.jsonData.gjs_components || null,
       html: "",
-      css: ""
+      css: "",
+      url: finalUrl,
+      public_slug: `${code}/${safeName}`
     };
 
     res.status(201).json({ project });

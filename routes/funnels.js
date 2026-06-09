@@ -95,7 +95,7 @@ router.post("/", async (req, res) => {
 
     const pageData = {
       name: title,
-      url: `${domain}/f/${identifier}/${safeTitle}`,
+      url: `${domain}/f/tmp/${safeTitle}`, // URL temporal
       published: "true",
       type: "VIDEO_FUNNEL",
       origin: process.env.APP_ORIGIN || "KiuFlow",
@@ -103,13 +103,19 @@ router.post("/", async (req, res) => {
     };
 
     const result = await kiuflowService.createWebpage(pageData, subIdToUse);
+    const code = result.code || identifier;
+    const finalUrl = `${domain}/f/${code}/${safeTitle}`;
+
+    // Actualizar la URL en KiuFlow con el código real
+    await kiuflowService.updateWebpage(result.id, { ...pageData, url: finalUrl }, subIdToUse);
+
     res.status(201).json({
       funnel: {
         id: result.id,
         title,
         video_url,
-        url: result.url,
-        public_slug: `${identifier}/${safeTitle}`,
+        url: finalUrl,
+        public_slug: `${code}/${safeTitle}`,
         is_published: 1,
         ...rest,
       },
