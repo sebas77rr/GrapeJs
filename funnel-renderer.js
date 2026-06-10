@@ -878,13 +878,23 @@ function renderFunnelForm(funnel) {
 
     // ── Select slot ──
     function selectSlot(startDateStr, startTime, el) {
-      // Ensure we don't end up with HH:MM:00:00
-      var safeTime = startTime.length > 5 ? startTime.substring(0, 5) : startTime;
-      var cleanStartDate = startDateStr;
-      if (startDateStr.length > 16) {
-        cleanStartDate = startDateStr.substring(0, 10) + 'T' + safeTime + ':00';
-      }
-      selectedSlot = { startDate: cleanStartDate, startTime: safeTime };
+      // Calcular offset del navegador
+      var tzOffset = new Date().getTimezoneOffset();
+      var sign = tzOffset > 0 ? '-' : '+';
+      var absOffset = Math.abs(tzOffset);
+      var hours = String(Math.floor(absOffset / 60)).padStart(2, '0');
+      var mins = String(absOffset % 60).padStart(2, '0');
+      var offsetString = sign + hours + ':' + mins;
+
+      // Limpiar y asegurar formato YYYY-MM-DD y HH:MM
+      var cleanDatePart = startDateStr.length > 10 ? startDateStr.substring(0, 10) : startDateStr;
+      var cleanTimePart = startTime.length > 5 ? startTime.substring(0, 5) : startTime;
+
+      // Ensamblar fecha ISO 8601 completa con timezone offset
+      var finalIsoString = cleanDatePart + 'T' + cleanTimePart + ':00' + offsetString;
+
+      selectedDate = cleanDatePart;
+      selectedSlot = { startDate: finalIsoString, startTime: cleanTimePart };
       document.querySelectorAll('.slot-btn').forEach(function(b) { b.classList.remove('selected'); });
       el.classList.add('selected');
       var summary = document.getElementById('selectionSummary');
