@@ -127,22 +127,26 @@ router.post("/appointment", async (req, res) => {
     const { reminders } = req.body;
     if (Array.isArray(reminders)) {
       try {
-        const citaDate = new Date(date);
-        const ahora = new Date();
-        const msHastaCita = citaDate - ahora;
-
+        const citaDate = new Date(date); // Fecha local tal como llegó
+        
         const offsets = [
-          msHastaCita - 24 * 3600000, // R2: 24h antes
-          msHastaCita - 3 * 3600000, // R3: 3h antes
-          msHastaCita - 5 * 60000, // R4: 5 mins antes
+          24 * 3600000, // R2: 24h antes
+          3 * 3600000,  // R3: 3h antes
+          5 * 60000,    // R4: 5 mins antes
         ];
+
+        const pad = (n) => n.toString().padStart(2, '0');
 
         for (let i = 0; i < offsets.length; i++) {
           const rem = reminders[i + 1]; // R2=index 1, R3=index 2, R4=index 3
           if (!rem || !rem.channelId) continue;
-          if (offsets[i] <= 0) continue; // ya pasó ese momento
 
-          const remindAt = new Date(ahora.getTime() + offsets[i]).toISOString();
+          // Restamos el offset directamente a la fecha local de la cita
+          const remDate = new Date(citaDate.getTime() - offsets[i]);
+          
+          // Formateamos como "YYYY-MM-DDTHH:mm:ss" sin la Z para que KiuFlow use su zona horaria
+          const remindAt = `${remDate.getFullYear()}-${pad(remDate.getMonth()+1)}-${pad(remDate.getDate())}T${pad(remDate.getHours())}:${pad(remDate.getMinutes())}:00`;
+          
           try {
             await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
               clientId: String(clientId),
