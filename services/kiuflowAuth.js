@@ -9,7 +9,7 @@ let cachedToken = null;
 let tokenExpirationTime = null;
 let cachedUserInfo = null;
 
-const { asyncLocalStorage } = require('../server');
+// asyncLocalStorage will be required locally when needed
 
 function isExternalTokenValid(token) {
   if (!token) return false;
@@ -74,7 +74,14 @@ async function login() {
  */
 async function getValidToken() {
   // Prioridad 1: Token inyectado en la petición HTTP desde el frontend
-  const requestToken = asyncLocalStorage ? asyncLocalStorage.getStore() : null;
+  let requestToken = null;
+  try {
+    const { asyncLocalStorage } = require('../server');
+    requestToken = asyncLocalStorage ? asyncLocalStorage.getStore() : null;
+  } catch (e) {
+    // ignorar error circular temporal si ocurre
+  }
+  
   if (isExternalTokenValid(requestToken)) {
     return requestToken;
   }
