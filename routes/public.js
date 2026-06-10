@@ -231,7 +231,7 @@ router.get(/^\/f\/(?!.*\/form$).+/, async (req, res) => {
       cta_text: funnelPage.jsonData?.cta_text,
       cta_color: funnelPage.jsonData?.cta_color,
       video_threshold: funnelPage.jsonData?.video_threshold,
-      sub_id: funnelPage.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID,
+      sub_id: funnelPage.suscription_id || funnelPage.subscription_id || funnelPage.suscriptionId || funnelPage.subscriptionId || funnelPage.jsonData?.suscription_id || funnelPage.jsonData?.subscriptionId || process.env.KIUFLOW_SUBSCRIPTION_ID,
       public_slug: code + "/" + (parts[3] || "funnel"),
       jwt: funnelPage.jwt,
       ...funnelPage.jsonData
@@ -269,7 +269,7 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
       cta_text: funnelPage.jsonData?.cta_text,
       cta_color: funnelPage.jsonData?.cta_color,
       video_threshold: funnelPage.jsonData?.video_threshold,
-      sub_id: funnelPage.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID,
+      sub_id: funnelPage.suscription_id || funnelPage.subscription_id || funnelPage.suscriptionId || funnelPage.subscriptionId || funnelPage.jsonData?.suscription_id || funnelPage.jsonData?.subscriptionId || process.env.KIUFLOW_SUBSCRIPTION_ID,
       public_slug: code + "/" + (parts[3] || "funnel"),
       jwt: funnelPage.jwt,
       ...funnelPage.jsonData,
