@@ -99,7 +99,7 @@ router.post("/", async (req, res) => {
       published: "true",
       type: "VIDEO_FUNNEL",
       origin: process.env.APP_ORIGIN || "KiuFlow",
-      jsonData: { video_url: video_url || "", ...rest },
+      jsonData: { video_url: video_url || "", suscription_id: subIdToUse, ...rest },
     };
 
     const result = await kiuflowService.createWebpage(pageData, subIdToUse);
@@ -145,6 +145,7 @@ router.put("/:id", async (req, res) => {
       origin: kfPage.origin || process.env.APP_ORIGIN || "KiuFlow",
       jsonData: {
         ...(kfPage.jsonData || {}),
+        suscription_id: subIdToUse,
         ...rest,
       },
     };
