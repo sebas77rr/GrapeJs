@@ -95,16 +95,24 @@ router.post("/appointment", async (req, res) => {
     if (isNaN(validDateObj.getTime())) {
       throw new Error("Fecha invalida enviada desde el frontend");
     }
-    const isoDate = validDateObj.toISOString();
-    const endIsoDate = new Date(validDateObj.getTime() + 30 * 60000).toISOString();
+    
+    // El frontend envia "YYYY-MM-DDTHH:mm:ss" sin zona horaria.
+    // Si usamos .toISOString(), el servidor Node (que puede estar en UTC) moverá las horas.
+    // Para respetar la zona horaria local de KiuFlow, enviamos la cadena tal cual.
+    const localStartDateStr = date; 
+    
+    // Calcular endDate sumando 30 mins
+    const endObj = new Date(validDateObj.getTime() + 30 * 60000);
+    const pad = (n) => n.toString().padStart(2, '0');
+    const localEndDateStr = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
 
     const apptData = {
       clientId: String(clientId),
-      date: isoDate,
-      startDate: isoDate,
-      start: isoDate,
-      endDate: endIsoDate,
-      end: endIsoDate,
+      date: localStartDateStr,
+      startDate: localStartDateStr,
+      start: localStartDateStr,
+      endDate: localEndDateStr,
+      end: localEndDateStr,
       confirmed: "true",
       attended: "false",
       virtual: "true",
