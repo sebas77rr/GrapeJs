@@ -162,6 +162,7 @@ router.put("/:id", async (req, res) => {
       origin: process.env.APP_ORIGIN || "KiuFlow",
       jsonData: {
         ...(kfPage.jsonData || {}),
+        suscription_id: subIdToUse,
         gjs_html: html !== undefined ? html : kfPage.jsonData?.gjs_html,
         gjs_css: css !== undefined ? css : kfPage.jsonData?.gjs_css,
         gjs_components: json_data !== undefined ? json_data : kfPage.jsonData?.gjs_components

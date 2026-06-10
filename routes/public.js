@@ -181,7 +181,11 @@ router.get("/p/*", async (req, res) => {
 
     const html = landing.jsonData?.gjs_html || "";
     const css = landing.jsonData?.gjs_css || "";
-    const jwtScript = `<script>window.KF_PUBLIC_JWT = "${landing.jwt || ''}";</script>`;
+    const subIdToInject = landing.suscription_id || landing.subscription_id || landing.suscriptionId || landing.jsonData?.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID || "";
+    const jwtScript = `<script>
+      window.KF_PUBLIC_JWT = "${landing.jwt || ''}";
+      window.KF_SUB_ID = "${subIdToInject}";
+    </script>`;
 
     const finalHtml = `
       <!DOCTYPE html>
