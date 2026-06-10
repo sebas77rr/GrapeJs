@@ -96,23 +96,19 @@ router.post("/appointment", async (req, res) => {
       throw new Error("Fecha invalida enviada desde el frontend");
     }
     
-    // El frontend envia "YYYY-MM-DDTHH:mm:ss" sin zona horaria.
-    // Si usamos .toISOString(), el servidor Node (que puede estar en UTC) moverá las horas.
-    // Para respetar la zona horaria local de KiuFlow, enviamos la cadena tal cual.
-    const localStartDateStr = date; 
+    const isoDate = validDateObj.toISOString();
     
     // Calcular endDate sumando 30 mins
     const endObj = new Date(validDateObj.getTime() + 30 * 60000);
-    const pad = (n) => n.toString().padStart(2, '0');
-    const localEndDateStr = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
+    const endIsoDate = endObj.toISOString();
 
     const apptData = {
       clientId: String(clientId),
-      date: localStartDateStr,
-      startDate: localStartDateStr,
-      start: localStartDateStr,
-      endDate: localEndDateStr,
-      end: localEndDateStr,
+      date: isoDate,
+      startDate: isoDate,
+      start: isoDate,
+      endDate: endIsoDate,
+      end: endIsoDate,
       confirmed: "true",
       attended: "false",
       virtual: "true",
@@ -135,17 +131,13 @@ router.post("/appointment", async (req, res) => {
           5 * 60000,    // R4: 5 mins antes
         ];
 
-        const pad = (n) => n.toString().padStart(2, '0');
-
         for (let i = 0; i < offsets.length; i++) {
           const rem = reminders[i + 1]; // R2=index 1, R3=index 2, R4=index 3
           if (!rem || !rem.channelId) continue;
 
           // Restamos el offset directamente a la fecha local de la cita
           const remDate = new Date(citaDate.getTime() - offsets[i]);
-          
-          // Formateamos como "YYYY-MM-DDTHH:mm:ss" sin la Z para que KiuFlow use su zona horaria
-          const remindAt = `${remDate.getFullYear()}-${pad(remDate.getMonth()+1)}-${pad(remDate.getDate())}T${pad(remDate.getHours())}:${pad(remDate.getMinutes())}:00`;
+          const remindAt = remDate.toISOString();
           
           try {
             await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
