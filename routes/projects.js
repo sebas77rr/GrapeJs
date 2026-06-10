@@ -84,7 +84,7 @@ router.post("/", async (req, res) => {
     }
 
     const safeName = name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'landing';
-    const domain = process.env.APP_DOMAIN || "https://builder-api.kiuflow.online";
+    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
     const pageData = {
       name: name,
       url: `${domain}/p/tmp/${safeName}`, // URL temporal

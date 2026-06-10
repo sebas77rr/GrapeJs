@@ -90,7 +90,7 @@ router.post("/", async (req, res) => {
 
   try {
     const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "funnel";
-    const domain = process.env.APP_DOMAIN || "https://builder-api.kiuflow.online";
+    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
     const identifier = Date.now().toString(36);
 
     const pageData = {
