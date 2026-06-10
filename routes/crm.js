@@ -91,12 +91,21 @@ router.post("/appointment", async (req, res) => {
       console.warn("No se pudieron obtener agentes, se enviará vacío", e.message);
     }
 
-    // Asegurar que el formato sea YYYY-MM-DD HH:mm:ss (KiuFlow rechaza la 'T' de ISO)
-    const formattedDate = date.replace('T', ' ');
+    // Convertir a fecha ISO estricta con Z (ej. 2026-07-07T14:00:00.000Z) para que KiuFlow la acepte
+    const validDateObj = new Date(date);
+    if (isNaN(validDateObj.getTime())) {
+      throw new Error("Fecha invalida enviada desde el frontend");
+    }
+    const isoDate = validDateObj.toISOString();
+    const endIsoDate = new Date(validDateObj.getTime() + 30 * 60000).toISOString();
 
     const apptData = {
       clientId: String(clientId),
-      date: formattedDate,
+      date: isoDate,
+      startDate: isoDate,
+      start: isoDate,
+      endDate: endIsoDate,
+      end: endIsoDate,
       confirmed: "true",
       attended: "false",
       virtual: "true",
