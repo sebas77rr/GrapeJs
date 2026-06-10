@@ -91,9 +91,12 @@ router.post("/appointment", async (req, res) => {
       console.warn("No se pudieron obtener agentes, se enviará vacío", e.message);
     }
 
+    // Asegurar que el formato sea YYYY-MM-DD HH:mm:ss (KiuFlow rechaza la 'T' de ISO)
+    const formattedDate = date.replace('T', ' ');
+
     const apptData = {
       clientId: String(clientId),
-      date,
+      date: formattedDate,
       confirmed: "true",
       attended: "false",
       virtual: "true",
