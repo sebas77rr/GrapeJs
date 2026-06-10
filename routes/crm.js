@@ -91,15 +91,20 @@ router.post("/appointment", async (req, res) => {
       console.warn("No se pudieron obtener agentes, se enviará vacío", e.message);
     }
 
-    const validDateObj = new Date(date);
-    if (isNaN(validDateObj.getTime())) {
+    // Extraer la fecha y hora cruda (ej: "2026-07-09T14:00:00") descartando el timezone
+    const localStr = date.substring(0, 19);
+    
+    // Crear un objeto Date tratando la fecha local como si fuera UTC para poder manipularla sin desfase de servidor
+    const fakeUtcObj = new Date(localStr + "Z");
+    if (isNaN(fakeUtcObj.getTime())) {
       throw new Error("Fecha invalida enviada desde el frontend");
     }
     
-    const isoDate = validDateObj.toISOString();
+    // Formato que espera KiuFlow (los numeros de la hora local con la Z pegada)
+    const isoDate = fakeUtcObj.toISOString();
     
-    // Calcular endDate sumando 30 mins
-    const endObj = new Date(validDateObj.getTime() + 30 * 60000);
+    // Calcular endDate sumando 30 mins a nuestro fake UTC
+    const endObj = new Date(fakeUtcObj.getTime() + 30 * 60000);
     const endIsoDate = endObj.toISOString();
 
     const apptData = {
@@ -123,8 +128,6 @@ router.post("/appointment", async (req, res) => {
     const { reminders } = req.body;
     if (Array.isArray(reminders)) {
       try {
-        const citaDate = new Date(date); // Fecha local tal como llegó
-        
         const offsets = [
           24 * 3600000, // R2: 24h antes
           3 * 3600000,  // R3: 3h antes
@@ -135,8 +138,8 @@ router.post("/appointment", async (req, res) => {
           const rem = reminders[i + 1]; // R2=index 1, R3=index 2, R4=index 3
           if (!rem || !rem.channelId) continue;
 
-          // Restamos el offset directamente a la fecha local de la cita
-          const remDate = new Date(citaDate.getTime() - offsets[i]);
+          // Restamos el offset directamente al fake UTC
+          const remDate = new Date(fakeUtcObj.getTime() - offsets[i]);
           const remindAt = remDate.toISOString();
           
           try {
