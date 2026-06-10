@@ -81,7 +81,7 @@ router.post("/:funnelId/leads", async (req, res) => {
     if (Array.isArray(reminders) && reminders.length > 0) {
       const r1 = reminders[0];
       if (r1 && r1.channelId && r1.enabled) {
-        const remindAt = new Date(Date.now() + 5 * 60000).toISOString(); // 5 minutos después
+        const remindAt = new Date(Date.now() + 5 * 60000).toISOString();
         
         try {
           const axios = require("axios");

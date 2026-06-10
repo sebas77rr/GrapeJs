@@ -91,7 +91,6 @@ router.post("/appointment", async (req, res) => {
       console.warn("No se pudieron obtener agentes, se enviará vacío", e.message);
     }
 
-    // Convertir a fecha ISO estricta con Z (ej. 2026-07-07T14:00:00.000Z) para que KiuFlow la acepte
     const validDateObj = new Date(date);
     if (isNaN(validDateObj.getTime())) {
       throw new Error("Fecha invalida enviada desde el frontend");

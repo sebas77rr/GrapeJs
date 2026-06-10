@@ -9,8 +9,6 @@ let cachedToken = null;
 let tokenExpirationTime = null;
 let cachedUserInfo = null;
 
-// asyncLocalStorage will be required locally when needed
-
 function isExternalTokenValid(token) {
   if (!token) return false;
   try {
@@ -78,9 +76,7 @@ async function getValidToken() {
   try {
     const { asyncLocalStorage } = require('../server');
     requestToken = asyncLocalStorage ? asyncLocalStorage.getStore() : null;
-  } catch (e) {
-    // ignorar error circular temporal si ocurre
-  }
+  } catch (e) {}
   
   if (isExternalTokenValid(requestToken)) {
     return requestToken;
