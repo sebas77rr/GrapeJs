@@ -76,35 +76,31 @@ router.post("/:funnelId/leads", async (req, res) => {
 
     /**
      * Paso 3: Disparador de Automatizaciones
-     * Para pruebas: Programamos TODOS los recordatorios espaciados cada 2 minutos.
-     * R1 a los 2 min, R2 a los 4 min, R3 a los 6 min.
+     * Programamos solo el primer recordatorio (R1) para cuando se registra el lead.
      */
-    if (Array.isArray(reminders)) {
-      const reminderPromises = reminders.map((r, index) => {
-        if (r && r.channelId) {
-          const minutesToAdd = (index + 1) * 2;
-          const remindAt = new Date(Date.now() + minutesToAdd * 60000).toISOString(); 
-          
+    if (Array.isArray(reminders) && reminders.length > 0) {
+      const r1 = reminders[0];
+      if (r1 && r1.channelId && r1.enabled) {
+        const remindAt = new Date(Date.now() + 2 * 60000).toISOString(); // 2 minutos después
+        
+        try {
           const axios = require("axios");
-          return axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
+          await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
             clientId,
-            channelId: r.channelId,
-            templateId: r.templateId || null,
-            content: r.content,
+            channelId: r1.channelId,
+            templateId: r1.templateId || null,
+            content: r1.content,
             remindAt
           }, {
             headers: {
               'Authorization': req.headers.authorization || "",
               'Content-Type': 'application/json'
             }
-          }).catch(err => {
-            console.error(`Error creando R${index + 1}:`, err.message);
           });
+        } catch (err) {
+          console.error("Error creando R1:", err.message);
         }
-        return Promise.resolve();
-      });
-
-      await Promise.all(reminderPromises);
+      }
     }
 
     res.status(201).json({ ok: true, lead: { id: clientId, ...data } });
