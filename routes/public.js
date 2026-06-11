@@ -128,9 +128,9 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
         const ahora = new Date();
 
         const offsets = [
-          2 * 60000, // R2: a los 2 minutos (prueba)
-          4 * 60000, // R3: a los 4 minutos (prueba)
-          6 * 60000, // R4: a los 6 minutos (prueba)
+          24 * 3600000, // R2: 24h antes
+          3 * 3600000,  // R3: 3h antes
+          5 * 60000,    // R4: 5 mins antes
         ];
 
         for (let i = 0; i < offsets.length; i++) {
