@@ -125,7 +125,7 @@ router.post("/appointment", async (req, res) => {
     const result = resultRes.data.data;
 
     // Crear Recordatorios de cita R2, R3, R4 según flujo definido
-    const { reminders } = req.body;
+    const { reminders, surveyId, surveyChannelId } = req.body;
     if (Array.isArray(reminders)) {
       try {
         const offsets = [
@@ -159,9 +159,62 @@ router.post("/appointment", async (req, res) => {
       }
     }
 
+    // ── Recordatorio de Encuesta Post-Cita (1 hora después de endDate) ──
+    if (surveyId && surveyChannelId) {
+      try {
+        const domain = process.env.APP_DOMAIN || 'https://builder.kiuflow.online';
+        const surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}`;
+        const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
+
+        // Disparar 1 hora después de que termine la cita
+        const surveyRemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
+
+        await axios.post(
+          `${API_URL}/api/v1/suscription/${subIdToUse}/reminder/create`,
+          {
+            clientId: String(clientId),
+            channelId: surveyChannelId,
+            content: surveyMessage,
+            remindAt: surveyRemindAt,
+          },
+          { headers: authHeaders }
+        );
+
+        console.log(`✅ Survey reminder scheduled for client ${clientId} at ${surveyRemindAt}`);
+      } catch (surveyErr) {
+        // No bloqueamos la respuesta si falla el recordatorio de encuesta
+        console.error('Error creando recordatorio de encuesta:', surveyErr.message);
+      }
+    }
+
     res.status(201).json({ ok: true, appointment: result });
   } catch (error) {
     console.error("ERROR APPOINTMENT:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/crm/surveys
+router.get("/surveys", async (req, res) => {
+  try {
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const surveys = await kiuflowService.getSurveys(subIdToUse);
+    res.json({ surveys });
+  } catch (error) {
+    console.error("ERROR surveys:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/crm/surveys/:id/questions
+router.get("/surveys/:id/questions", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const questions = await kiuflowService.getSurveyQuestions(id, subIdToUse);
+    res.json({ questions });
+  } catch (error) {
+    console.error("ERROR survey questions:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

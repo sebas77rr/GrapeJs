@@ -723,6 +723,8 @@ function renderFunnelForm(funnel) {
   (function() {
     var FUNNEL_ID = '${funnel.id}';
     var SUB_ID = '${funnel.sub_id || ""}';
+    var SURVEY_ID = '${funnel.surveyId || ""}';
+    var SURVEY_CHANNEL_ID = '${funnel.defaultChannelId || ""}';
     var FIELDS = ${JSON.stringify(parsedFields)};
     var COLORS = ['#7c3aed','#a78bfa','#34d399','#f59e0b','#ec4899','#3b82f6'];
     var clientId = null;
@@ -942,6 +944,8 @@ function renderFunnelForm(funnel) {
           date: selectedSlot.startDate,
           funnelId: FUNNEL_ID,
           sub_id: SUB_ID,
+          surveyId: SURVEY_ID,
+          surveyChannelId: SURVEY_CHANNEL_ID,
           reminders: ${JSON.stringify(funnel.reminders || [])}
         })
       })

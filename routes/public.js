@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const kiuflowService = require("../services/kiuflowService");
 const { renderFunnelLanding, renderFunnelForm } = require("../funnel-renderer");
+const { renderSurveyPage } = require("../survey-renderer");
 
 const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
 
@@ -127,9 +128,9 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
         const ahora = new Date();
 
         const offsets = [
-          2 * 60000, // R2: a los 2 minutos (prueba)
-          4 * 60000, // R3: a los 4 minutos (prueba)
-          6 * 60000, // R4: a los 6 minutos (prueba)
+          24 * 3600000, // R2: 24h antes
+          3 * 3600000,  // R3: 3h antes
+          5 * 60000,    // R4: 5 mins antes
         ];
 
         for (let i = 0; i < offsets.length; i++) {
@@ -284,6 +285,92 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
   } catch (error) {
     console.error("Error en public funnel form:", error.message);
     res.status(500).send("<h1>Error cargando formulario</h1>");
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// RUTAS DE ENCUESTA PÚBLICA
+// ──────────────────────────────────────────────────────────
+
+/**
+ * GET /s/:surveyId
+ * Renderiza la página pública de la encuesta.
+ * Query params: ?client=<clientId>&sub=<subId>
+ */
+router.get("/s/:surveyId", async (req, res) => {
+  try {
+    const { surveyId } = req.params;
+    const { client: clientId, sub: subId } = req.query;
+    const subIdToUse = subId || process.env.KIUFLOW_SUBSCRIPTION_ID;
+
+    if (!surveyId) return res.status(404).send("<h1>Encuesta no encontrada</h1>");
+
+    // Traer la encuesta y sus preguntas desde KiuFlow
+    let surveyName = "Encuesta de Satisfacción";
+    let questions = [];
+
+    try {
+      const surveyRes = await kiuflowService.getSurvey(surveyId, subIdToUse);
+      if (surveyRes && (surveyRes.name || surveyRes.data?.name)) {
+        surveyName = surveyRes.name || surveyRes.data?.name || surveyName;
+      }
+    } catch (e) {
+      console.warn("No se pudo obtener nombre de encuesta:", e.message);
+    }
+
+    try {
+      const questionsRes = await kiuflowService.getSurveyQuestions(surveyId, subIdToUse);
+      questions = Array.isArray(questionsRes) ? questionsRes : (questionsRes?.data || questionsRes?.questions || []);
+    } catch (e) {
+      console.warn("No se pudieron obtener preguntas:", e.message);
+    }
+
+    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
+    const html = renderSurveyPage({
+      surveyId,
+      surveyName,
+      clientId: clientId || "",
+      subId: subIdToUse,
+      questions,
+      apiBase: domain,
+    });
+
+    res.send(html);
+  } catch (error) {
+    console.error("Error renderizando encuesta:", error.message);
+    res.status(500).send("<h1>Error cargando la encuesta</h1>");
+  }
+});
+
+/**
+ * POST /api/public/survey/:surveyId/answer
+ * Guarda la respuesta de una pregunta en KiuFlow.
+ * Body: { questionId, answer, clientId, sub_id }
+ */
+router.post("/api/public/survey/:surveyId/answer", async (req, res) => {
+  try {
+    const { surveyId } = req.params;
+    const { questionId, answer, clientId, sub_id } = req.body;
+    const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+
+    if (!surveyId || !questionId || answer == null) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos" });
+    }
+
+    const result = await kiuflowService.submitSurveyAnswer(
+      surveyId,
+      questionId,
+      clientId || "0",
+      answer,
+      subIdToUse
+    );
+
+    res.json({ ok: true, result });
+  } catch (error) {
+    console.error("Error guardando respuesta de encuesta:", error.message);
+    // Respondemos ok igual para no bloquear al usuario — la respuesta se perdió
+    // pero no queremos frustrar la UX
+    res.status(500).json({ error: error.message });
   }
 });
 

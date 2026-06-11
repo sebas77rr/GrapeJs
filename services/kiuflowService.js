@@ -222,16 +222,6 @@ const kiuflowService = {
     );
   },
 
-  /**
-   * --- Automatizaciones y Recordatorios ---
-   * Permite programar mensajes, correos o WhatsApps diferidos.
-   */
-  createReminder: async (reminderData, suscriptionId = SUB_ID) => {
-    return post(
-      `/api/v1/suscription/${suscriptionId}/reminder/create`,
-      reminderData,
-    );
-  },
 
   /**
    * --- Administración de Equipo ---
@@ -242,7 +232,29 @@ const kiuflowService = {
   },
 
   getAgents: async (suscriptionId = SUB_ID) => {
-  return post(`/api/v1/suscription/${suscriptionId}/agent/list`, {});
+    return post(`/api/v1/suscription/${suscriptionId}/agent/list`, {});
+  },
+
+  /**
+   * --- Encuestas (Surveys) ---
+   */
+  getSurveys: async (suscriptionId = SUB_ID) => {
+    return post(`/api/v1/suscription/${suscriptionId}/survey/list`, {});
+  },
+
+  getSurvey: async (surveyId, suscriptionId = SUB_ID) => {
+    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/get`, {});
+  },
+
+  getSurveyQuestions: async (surveyId, suscriptionId = SUB_ID) => {
+    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`, {});
+  },
+
+  submitSurveyAnswer: async (surveyId, questionId, clientId, answer, suscriptionId = SUB_ID) => {
+    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/${questionId}/answer/create`, {
+      clientId: String(clientId),
+      answer,
+    });
   },
 };
 
