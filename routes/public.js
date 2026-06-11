@@ -312,7 +312,7 @@ router.get("/s/:surveyId", async (req, res) => {
     if (surveyId === 'preview') {
       return res.send(renderSurveyPage({
         surveyId: 'preview',
-        surveyName: 'Vista Previa de Diseño',
+        surveyName: 'Encuesta de Satisfacción',
         clientId: 'demo',
         subId: 'demo',
         apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",

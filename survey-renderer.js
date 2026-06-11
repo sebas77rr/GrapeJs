@@ -437,7 +437,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
 
   <!-- Header -->
   <header class="header">
-    <div class="header-logo">KiuFlow</div>
+    <div class="header-logo"><img src="https://app.kiuflow.online/assets/logo-HPxhRlMt.png" alt="KiuFlow" style="height: 24px; vertical-align: middle;"></div>
     <div class="header-counter" id="counter">0 / ${totalQ} respondidas</div>
   </header>
   <div class="progress-bar-wrap">
