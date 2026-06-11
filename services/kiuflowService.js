@@ -259,6 +259,13 @@ const kiuflowService = {
   getSurveyQuestions: async (surveyId, suscriptionId = SUB_ID) => {
     return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`, {});
   },
+
+  submitSurveyAnswer: async (surveyId, questionId, clientId, answer, suscriptionId = SUB_ID) => {
+    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/${questionId}/answer/create`, {
+      clientId: String(clientId),
+      answer,
+    });
+  },
 };
 
 module.exports = kiuflowService;
