@@ -33,7 +33,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
   // Build question HTML blocks
   const questionsHtml = (questions || []).map((q, idx) => {
     const num = idx + 1;
-    const qText = escapeHtml(q.question || q.name || `Pregunta ${num}`);
+    const qText = escapeHtml(q.text || q.title || q.question || q.name || q.label || q.content || q.body || `Pregunta ${num}`);
     const qId = `q_${q.id || idx}`;
     const kiuId = q.id;
     const type = (q.type || '').toUpperCase();
