@@ -300,8 +300,8 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
 router.get("/s/:surveyId", async (req, res) => {
   try {
     const { surveyId } = req.params;
-    const { client: clientId, sub: subId } = req.query;
-    const subIdToUse = subId || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const { client: clientId, sub, sub_id } = req.query;
+    const subIdToUse = sub || sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
     if (!surveyId) return res.status(404).send("<h1>Encuesta no encontrada</h1>");
 
