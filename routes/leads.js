@@ -14,6 +14,10 @@ router.post("/:funnelId/leads", async (req, res) => {
     const { channelId, reminders } = req.body;
     const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
 
+    const fs = require("fs");
+    fs.appendFileSync("leads_debug.log", JSON.stringify({ time: new Date().toISOString(), body: req.body }) + "\\n");
+
+
     /**
      * Mapeo Dinámico de Campos:
      * Separa los campos estándar (nombre, email, teléfono) de cualquier
