@@ -186,7 +186,7 @@ router.post("/appointment", async (req, res) => {
         const surveyRemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
 
         await axios.post(
-          `${API_URL}/api/v1/suscription/${subIdToUse}/reminder/create`,
+          `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
           {
             clientId: String(clientId),
             channelId: surveyChannelId,
