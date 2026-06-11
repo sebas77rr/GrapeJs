@@ -305,9 +305,27 @@ router.get("/s/:surveyId", async (req, res) => {
 
     if (!surveyId) return res.status(404).send("<h1>Encuesta no encontrada</h1>");
 
-    // Traer la encuesta y sus preguntas desde KiuFlow
     let surveyName = "Encuesta de Satisfacción";
     let questions = [];
+
+    // MODO PREVIEW PARA VER EL DISEÑO SIN CONECTAR A KIUFLOW
+    if (surveyId === 'preview') {
+      return res.send(renderSurveyPage({
+        surveyId: 'preview',
+        surveyName: 'Vista Previa de Diseño',
+        clientId: 'demo',
+        subId: 'demo',
+        apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
+        questions: [
+          { id: 101, type: 'SINGLE_CHOICE', text: '¿Qué tan dispuesto estarías a recomendar nuestro servicio?', options: ['1 (Nada)', '2', '3', '4', '5 (Totalmente)'] },
+          { id: 102, type: 'OPEN', text: 'Describe brevemente qué motiva tu calificación' },
+          { id: 103, type: 'SCALE', text: '¿Cómo calificarías la atención recibida?', min: 1, max: 10 },
+          { id: 104, type: 'MULTIPLE_CHOICE', text: '¿En cuáles aspectos debemos mejorar?', options: ['Tiempos de espera', 'Claridad de la información', 'Amabilidad del personal', 'Opciones de pago'] }
+        ]
+      }));
+    }
+
+    // Traer la encuesta y sus preguntas desde KiuFlow
 
     try {
       const surveyRes = await kiuflowService.getSurvey(surveyId, subIdToUse);
