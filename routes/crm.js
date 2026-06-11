@@ -128,6 +128,22 @@ router.post("/appointment", async (req, res) => {
     const { reminders, surveyId, surveyChannelId } = req.body;
     if (Array.isArray(reminders)) {
       try {
+        // R1: Confirmación inmediata (index 0)
+        const rem1 = reminders[0];
+        if (rem1 && rem1.channelId) {
+          try {
+            await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
+              clientId: String(clientId),
+              channelId: rem1.channelId,
+              templateId: rem1.templateId || null,
+              content: rem1.content,
+              remindAt: new Date().toISOString(), // Inmediato (Ahora)
+            }, { headers: authHeaders });
+          } catch (err) {
+            console.error("Error creando R1 (Inmediato):", err.message);
+          }
+        }
+
         const offsets = [
           24 * 3600000, // R2: 24h antes
           3 * 3600000,  // R3: 3h antes
