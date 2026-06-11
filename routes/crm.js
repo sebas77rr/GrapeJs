@@ -166,4 +166,29 @@ router.post("/appointment", async (req, res) => {
   }
 });
 
+// GET /api/crm/surveys
+router.get("/surveys", async (req, res) => {
+  try {
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const surveys = await kiuflowService.getSurveys(subIdToUse);
+    res.json({ surveys });
+  } catch (error) {
+    console.error("ERROR surveys:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/crm/surveys/:id/questions
+router.get("/surveys/:id/questions", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const questions = await kiuflowService.getSurveyQuestions(id, subIdToUse);
+    res.json({ questions });
+  } catch (error) {
+    console.error("ERROR survey questions:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
