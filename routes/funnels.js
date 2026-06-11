@@ -27,7 +27,7 @@ router.get("/", async (req, res) => {
       return {
         id: page.id,
         title: page.name || "Sin Nombre",
-        url: page.url,
+        url: page.url ? page.url.replace("builder-api.kiuflow.online", "builder.kiuflow.online") : page.url,
         public_slug: slug,
         is_published: page.published === true || page.published === "true" ? 1 : 0,
         created_at: new Date().toISOString(),
@@ -62,7 +62,7 @@ router.get("/:id", async (req, res) => {
     const funnel = {
       id: kfPage.id,
       title: kfPage.name,
-      url: kfPage.url,
+      url: kfPage.url ? kfPage.url.replace("builder-api.kiuflow.online", "builder.kiuflow.online") : kfPage.url,
       public_slug: slug,
       is_published: (kfPage.published === true || kfPage.published === "true") ? 1 : 0,
       ...(kfPage.jsonData || {}),
