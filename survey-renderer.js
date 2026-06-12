@@ -25,7 +25,7 @@ function escapeHtml(str) {
  * @param {Array}    opts.questions - Array of question objects from KiuFlow
  * @param {string}   [opts.apiBase] - Base URL of the builder backend
  */
-function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, apiBase = '' }) {
+function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52' }) {
   const totalQ = Array.isArray(questions) ? questions.length : 0;
   const safeTitle = escapeHtml(surveyName || 'Encuesta de Satisfacción');
   const safeApiBase = escapeHtml(apiBase);
@@ -137,10 +137,10 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
     /* ─── Reset & Base ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --rosa: #DB2C52;
-      --rosa-hover: #c0213f;
-      --rosa-soft: rgba(219, 44, 82, 0.08);
-      --rosa-border: rgba(219, 44, 82, 0.3);
+      --rosa: ${brandColor};
+      --rosa-hover: ${brandColor};
+      --rosa-soft: ${brandColor}14;
+      --rosa-border: ${brandColor}4D;
       --text: #1a1a2e;
       --text-muted: #64748b;
       --border: #e2e8f0;
@@ -437,7 +437,9 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
 
   <!-- Header -->
   <header class="header">
-    <div class="header-logo"><img src="https://app.kiuflow.online/assets/logo-HPxhRlMt.png" alt="KiuFlow" style="height: 24px; vertical-align: middle;"></div>
+    <div class="header-logo">
+      ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="Logo" style="max-height: 28px; object-fit: contain;">` : 'Encuesta'}
+    </div>
     <div class="header-counter" id="counter">0 / ${totalQ} respondidas</div>
   </header>
   <div class="progress-bar-wrap">

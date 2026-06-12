@@ -125,7 +125,7 @@ router.post("/appointment", async (req, res) => {
     const result = resultRes.data.data;
 
     // Crear Recordatorios de cita R2, R3, R4 según flujo definido
-    const { reminders, surveyId, surveyChannelId } = req.body;
+    const { reminders, surveyId, surveyChannelId, surveyLogoUrl, surveyColor } = req.body;
     if (Array.isArray(reminders)) {
       try {
         // R1: Confirmación inmediata (index 0)
@@ -179,7 +179,9 @@ router.post("/appointment", async (req, res) => {
     if (surveyId && surveyChannelId) {
       try {
         const domain = process.env.APP_DOMAIN || 'https://builder.kiuflow.online';
-        const surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}`;
+        let surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}`;
+        if (surveyLogoUrl) surveyUrl += `&logo=${encodeURIComponent(surveyLogoUrl)}`;
+        if (surveyColor) surveyUrl += `&color=${encodeURIComponent(surveyColor)}`;
         const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
 
         // Disparar 1 hora después de que termine la cita

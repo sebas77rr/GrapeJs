@@ -300,7 +300,7 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
 router.get("/s/:surveyId", async (req, res) => {
   try {
     const { surveyId } = req.params;
-    const { client: clientId, sub, sub_id } = req.query;
+    const { client: clientId, sub, sub_id, logo, color } = req.query;
     const subIdToUse = sub || sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
     if (!surveyId) return res.status(404).send("<h1>Encuesta no encontrada</h1>");
@@ -316,6 +316,8 @@ router.get("/s/:surveyId", async (req, res) => {
         clientId: 'demo',
         subId: 'demo',
         apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
+        logoUrl: logo || '',
+        brandColor: color || '#DB2C52',
         questions: [
           { id: 101, type: 'SINGLE_CHOICE', text: '¿Qué tan dispuesto estarías a recomendar nuestro servicio?', options: ['1 (Nada)', '2', '3', '4', '5 (Totalmente)'] },
           { id: 102, type: 'OPEN', text: 'Describe brevemente qué motiva tu calificación' },
@@ -351,6 +353,8 @@ router.get("/s/:surveyId", async (req, res) => {
       subId: subIdToUse,
       questions,
       apiBase: domain,
+      logoUrl: logo || "",
+      brandColor: color || "#DB2C52",
     });
 
     res.send(html);
