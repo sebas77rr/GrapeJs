@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const kiuflowService = require("../services/kiuflowService");
+const { getValidToken } = require("../services/kiuflowAuth");
 
 // POST /api/funnels/:funnelId/leads
 router.post("/:funnelId/leads", async (req, res) => {
@@ -65,9 +66,11 @@ router.post("/:funnelId/leads", async (req, res) => {
     let clientId;
     try {
       const axios = require("axios");
+      const userToken = req.headers.authorization || "";
+      const authToken = userToken ? userToken : `Bearer ${await getValidToken()}`;
       const clientRes = await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/client/create`, clientData, {
         headers: {
-          'Authorization': req.headers.authorization || "",
+          'Authorization': authToken,
           'Content-Type': 'application/json'
         }
       });
@@ -89,6 +92,8 @@ router.post("/:funnelId/leads", async (req, res) => {
         
         try {
           const axios = require("axios");
+          const userToken2 = req.headers.authorization || "";
+          const authToken2 = userToken2 ? userToken2 : `Bearer ${await getValidToken()}`;
           await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
             clientId,
             channelId: r1.channelId,
@@ -97,7 +102,7 @@ router.post("/:funnelId/leads", async (req, res) => {
             remindAt
           }, {
             headers: {
-              'Authorization': req.headers.authorization || "",
+              'Authorization': authToken2,
               'Content-Type': 'application/json'
             }
           });
