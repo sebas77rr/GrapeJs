@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const kiuflowService = require("../services/kiuflowService");
+const { getValidToken } = require("../services/kiuflowAuth");
 
 // GET /api/crm/channels
 router.get("/channels", async (req, res) => {
@@ -77,8 +78,11 @@ router.post("/appointment", async (req, res) => {
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
     const axios = require("axios");
+    // Si viene el token del usuario (Dashboard) úsalo, si no usa el token de servicio del .env
+    const userToken = req.headers.authorization || "";
+    const serviceToken = userToken ? userToken : `Bearer ${await getValidToken()}`;
     const authHeaders = {
-      'Authorization': req.headers.authorization || "",
+      'Authorization': serviceToken,
       'Content-Type': 'application/json'
     };
 
