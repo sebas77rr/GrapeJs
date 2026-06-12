@@ -238,8 +238,8 @@ router.get(/^\/f\/(?!.*\/form$).+/, async (req, res) => {
       video_threshold: funnelPage.jsonData?.video_threshold,
       sub_id: funnelPage.suscription_id || funnelPage.subscription_id || funnelPage.suscriptionId || funnelPage.subscriptionId || funnelPage.jsonData?.suscription_id || funnelPage.jsonData?.subscriptionId || process.env.KIUFLOW_SUBSCRIPTION_ID,
       public_slug: code + "/" + (parts[3] || "funnel"),
-      jwt: funnelPage.jwt,
-      ...funnelPage.jsonData
+      ...funnelPage.jsonData,
+      jwt: funnelPage.jwt,   // SIEMPRE al final para que no sea sobreescrito por jsonData
     };
 
     const html = renderFunnelLanding(funnel);
@@ -276,8 +276,8 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
       video_threshold: funnelPage.jsonData?.video_threshold,
       sub_id: funnelPage.suscription_id || funnelPage.subscription_id || funnelPage.suscriptionId || funnelPage.subscriptionId || funnelPage.jsonData?.suscription_id || funnelPage.jsonData?.subscriptionId || process.env.KIUFLOW_SUBSCRIPTION_ID,
       public_slug: code + "/" + (parts[3] || "funnel"),
-      jwt: funnelPage.jwt,
       ...funnelPage.jsonData,
+      jwt: funnelPage.jwt,   // SIEMPRE al final para que no sea sobreescrito por jsonData
     };
 
     const formHtml = renderFunnelForm(funnel);
