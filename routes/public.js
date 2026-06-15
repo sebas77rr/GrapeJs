@@ -396,33 +396,30 @@ router.get("/s/:surveyId", async (req, res) => {
 });
 
 /**
- * POST /api/public/survey/:surveyId/answer
- * Guarda la respuesta de una pregunta en KiuFlow.
- * Body: { questionId, answer, clientId, sub_id }
+ * POST /api/public/survey/:surveyId/submit-all
+ * Guarda todas las respuestas de una encuesta creando un submission en KiuFlow.
+ * Body: { clientId, sub_id, answers: [{ questionId, answer, type }] }
  */
-router.post("/api/public/survey/:surveyId/answer", async (req, res) => {
+router.post("/api/public/survey/:surveyId/submit-all", async (req, res) => {
   try {
     const { surveyId } = req.params;
-    const { questionId, answer, clientId, sub_id } = req.body;
+    const { clientId, sub_id, answers } = req.body;
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
-    if (!surveyId || !questionId || answer == null) {
-      return res.status(400).json({ error: "Faltan parámetros requeridos" });
+    if (!surveyId || !clientId || !Array.isArray(answers)) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos o answers no es un arreglo" });
     }
 
-    const result = await kiuflowService.submitSurveyAnswer(
+    const result = await kiuflowService.submitSurveyComplete(
       surveyId,
-      questionId,
-      clientId || "0",
-      answer,
+      clientId,
+      answers,
       subIdToUse
     );
 
     res.json({ ok: true, result });
   } catch (error) {
-    console.error("Error guardando respuesta de encuesta:", error.message);
-    // Respondemos ok igual para no bloquear al usuario — la respuesta se perdió
-    // pero no queremos frustrar la UX
+    console.error("Error guardando respuestas de encuesta:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

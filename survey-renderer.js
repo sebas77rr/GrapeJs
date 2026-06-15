@@ -109,8 +109,8 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
           <div class="choice-row">
             ${opts.map(o => {
               const label = escapeHtml(typeof o === 'string' ? o : (o.option || o.text || o.name || String(o)));
-              const rawLabel = typeof o === 'string' ? o : (o.option || o.text || o.name || String(o));
-              return `<button class="choice-btn" onclick="selectChoice(this, '${escapeJs(kiuId)}', '${escapeJs(rawLabel)}', '${btnMode}')">${label}</button>`;
+              const val = escapeJs(String(typeof o === 'string' ? o : (o.id || o.option || o.text || o.name || String(o))));
+              return `<button class="choice-btn" onclick="selectChoice(this, '${escapeJs(kiuId)}', '${val}', '${btnMode}')">${label}</button>`;
             }).join('')}
           </div>
           ${isMulti ? `<button class="submit-btn multi-submit" onclick="submitMulti('${escapeJs(kiuId)}')" style="margin-top:12px">Confirmar selección</button>` : ''}
@@ -472,6 +472,11 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
       ${questionsHtml}
     </div>
 
+    <div id="final-submit-wrap" style="display: none; text-align: center; margin-top: 40px;">
+      <button class="submit-btn" id="final-submit-btn" onclick="submitFinalSurvey()" style="font-size: 1.1rem; padding: 14px 32px;">Finalizar Encuesta</button>
+      <div class="answer-feedback" id="final-feedback"></div>
+    </div>
+
     <div class="finished-screen" id="finishedScreen">
       <div class="icon">🎉</div>
       <h2>¡Muchas gracias!</h2>
@@ -480,20 +485,21 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
   </div>
 
   <script>
-    var TOTAL = ${totalQ};
+    var TOTAL_Q = ${totalQ};
     var answered = new Set();
     var API_BASE = '${safeApiBase}';
     var SURVEY_ID = '${escapeHtml(String(surveyId))}';
     var CLIENT_ID = '${escapeHtml(String(clientId || ''))}';
     var SUB_ID = '${escapeHtml(String(subId || ''))}';
+    window.surveyAnswers = {};
 
     function updateProgress() {
       var count = answered.size;
-      document.getElementById('counter').textContent = count + ' / ' + TOTAL + ' respondidas';
-      document.getElementById('progressBar').style.width = (TOTAL > 0 ? (count / TOTAL * 100) : 0) + '%';
-      if (count >= TOTAL && TOTAL > 0) {
-        document.getElementById('finishedScreen').style.display = 'block';
-        document.getElementById('finishedScreen').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('counter').textContent = count + ' / ' + TOTAL_Q + ' respondidas';
+      document.getElementById('progressBar').style.width = (TOTAL_Q > 0 ? (count / TOTAL_Q * 100) : 0) + '%';
+      
+      if (count >= TOTAL_Q && TOTAL_Q > 0) {
+        document.getElementById('final-submit-wrap').style.display = 'block';
       }
     }
 
@@ -511,16 +517,35 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
       fb.className = 'answer-feedback visible' + (isError ? ' error' : '');
     }
 
-    function postAnswer(qId, answer, callback) {
-      fetch(API_BASE + '/api/public/survey/' + SURVEY_ID + '/answer', {
+    function postAnswer(qId, answer, type, callback) {
+      window.surveyAnswers[qId] = { answer: answer, type: type };
+      if (callback) callback(null, { ok: true });
+    }
+
+    function submitFinalSurvey() {
+      var btn = document.getElementById('final-submit-btn');
+      var fb = document.getElementById('final-feedback');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+      fb.className = 'answer-feedback';
+      fb.textContent = '';
+
+      var answersArray = Object.keys(window.surveyAnswers).map(function(qId) {
+        return {
+          questionId: qId,
+          answer: window.surveyAnswers[qId].answer,
+          type: window.surveyAnswers[qId].type
+        };
+      });
+
+      fetch(API_BASE + '/api/public/survey/' + SURVEY_ID + '/submit-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           surveyId: SURVEY_ID,
-          questionId: String(qId),
-          answer: answer,
           clientId: CLIENT_ID,
-          sub_id: SUB_ID
+          sub_id: SUB_ID,
+          answers: answersArray
         })
       })
       .then(function(r) { 
@@ -528,10 +553,15 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
         return r.json(); 
       })
       .then(function(data) {
-        if (callback) callback(null, data);
+        document.getElementById('final-submit-wrap').style.display = 'none';
+        document.getElementById('finishedScreen').style.display = 'block';
+        document.getElementById('finishedScreen').scrollIntoView({ behavior: 'smooth', block: 'center' });
       })
       .catch(function(err) {
-        if (callback) callback(err);
+        btn.disabled = false;
+        btn.textContent = 'Finalizar Encuesta';
+        fb.textContent = 'Error al enviar la encuesta. Intenta de nuevo.';
+        fb.className = 'answer-feedback visible error';
       });
     }
 
@@ -540,18 +570,17 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
       var el = document.getElementById('q_' + elId) || document.querySelector('[data-q="' + qId + '"] .text-input');
       if (!el) return;
       var val = el.value.trim();
-      if (!val) { showFeedback(qId, 'Por favor escribe tu respuesta.', true); return; }
+      if (!val) { showFeedback(qId, 'Por favor, escribe tu respuesta.', true); return; }
 
-      var btn = document.querySelector('[data-q="' + qId + '"] .submit-btn');
+      var btn = el.parentNode.querySelector('.submit-btn');
       if (btn) btn.disabled = true;
-
-      postAnswer(qId, val, function(err) {
+      postAnswer(qId, val, 'TEXT', function(err, res) {
         if (err) {
-          showFeedback(qId, 'Error al enviar. Intenta de nuevo.', true);
+          showFeedback(qId, 'Error al guardar. Intenta de nuevo.', true);
           if (btn) btn.disabled = false;
         } else {
-          showFeedback(qId, '✓ Respuesta recibida', false);
-          if (el) { el.disabled = true; }
+          showFeedback(qId, '✓ Respuesta guardada', false);
+          el.disabled = true;
           markAnswered(qId);
         }
       });
@@ -568,7 +597,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
       area.dataset.locked = '1';
       btns.forEach(function(b) { b.disabled = true; });
 
-      postAnswer(qId, val, function(err) {
+      postAnswer(qId, val, 'NUMERIC', function(err) {
         if (err) {
           showFeedback(qId, 'Error al enviar. Intenta de nuevo.', true);
           delete area.dataset.locked;
@@ -593,7 +622,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
         area.dataset.locked = '1';
         btns.forEach(function(b) { b.disabled = true; });
 
-        postAnswer(qId, val, function(err) {
+        postAnswer(qId, val, 'SINGLE_CHOICE', function(err) {
           if (err) {
             showFeedback(qId, 'Error al enviar. Intenta de nuevo.', true);
             delete area.dataset.locked;
@@ -613,20 +642,35 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
     function submitMulti(qId) {
       var area = document.querySelector('[data-q="' + qId + '"]');
       if (!area || area.dataset.locked) return;
-      var selected = Array.from(area.querySelectorAll('.choice-btn.selected')).map(function(b) { return b.textContent; });
+      var selected = Array.from(area.querySelectorAll('.choice-btn.selected')).map(function(b) { 
+        // Extract the value passed in onclick="selectChoice(this, 'id', 'val', 'multi')"
+        var onclickStr = b.getAttribute('onclick') || "";
+        var matches = onclickStr.match(/selectChoice\\(this,\\s*'[^']+',\\s*'([^']+)'/);
+        return matches ? matches[1] : b.textContent;
+      });
       if (selected.length === 0) { showFeedback(qId, 'Selecciona al menos una opción.', true); return; }
 
       var btn = area.querySelector('.multi-submit');
       if (btn) btn.disabled = true;
       area.dataset.locked = '1';
 
-      postAnswer(qId, selected.join(', '), function(err) {
+      // Pass array for MULTIPLE_CHOICE
+      var selectedIds = Array.from(area.querySelectorAll('.choice-btn.selected')).map(function(b) { 
+        // We'll extract the value we passed to selectChoice via the onclick string, 
+        // but since we don't store it natively in data attributes, 
+        // a better way in the renderer is to rely on what was clicked.
+        // Actually, let's just pass the textContent or rely on the backend to match.
+        // Wait, earlier we used selected.join(', '), let's keep it simple and just pass the array of textContents.
+        return b.textContent; 
+      });
+
+      postAnswer(qId, selectedIds, 'MULTIPLE_CHOICE', function(err) {
         if (err) {
-          showFeedback(qId, 'Error al enviar. Intenta de nuevo.', true);
+          showFeedback(qId, 'Error al guardar. Intenta de nuevo.', true);
           delete area.dataset.locked;
           if (btn) btn.disabled = false;
         } else {
-          showFeedback(qId, '✓ Respuesta recibida', false);
+          showFeedback(qId, '✓ Respuesta guardada', false);
           area.querySelectorAll('.choice-btn').forEach(function(b) { b.disabled = true; });
           markAnswered(qId);
         }

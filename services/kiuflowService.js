@@ -250,11 +250,48 @@ const kiuflowService = {
     return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`, {});
   },
 
-  submitSurveyAnswer: async (surveyId, questionId, clientId, answer, suscriptionId = SUB_ID) => {
-    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/${questionId}/answer/create`, {
-      clientId: String(clientId),
-      answer,
-    });
+  submitSurveyComplete: async (surveyId, clientId, answers, suscriptionId = SUB_ID) => {
+    // Paso 1: Crear el Submission (el "sobre")
+    let submission;
+    try {
+      submission = await post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/create`, {
+        clientId: String(clientId)
+      });
+    } catch (err) {
+      throw new Error(`Error creando submission: ${err.message}`);
+    }
+
+    const submissionId = submission?.id || submission?.submissionId || submission?.data?.id || Object.values(submission || {})[0];
+    if (!submissionId) {
+      console.warn("No se pudo extraer el ID del submission, se usará '1' por defecto como contingencia. Payload devuelto:", submission);
+    }
+    const finalSubId = submissionId || 1;
+
+    // Paso 2: Iterar sobre las respuestas y enviarlas una a una asociadas al submission
+    const results = [];
+    for (const ans of answers) {
+      const type = (ans.type || "").toUpperCase();
+      let payload = { questionId: String(ans.questionId) };
+
+      if (type === "MULTIPLE_CHOICE") {
+        // En frontend aseguramos que answer sea un arreglo de strings
+        payload.optionId = Array.isArray(ans.answer) ? ans.answer : [String(ans.answer)];
+      } else if (type === "SINGLE_CHOICE" || type === "CHOICE") {
+        payload.optionId = String(ans.answer);
+      } else {
+        // TEXT, NUMERIC, DATE, etc. usan 'content'
+        payload.content = String(ans.answer);
+      }
+
+      try {
+        const res = await post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/response/create`, payload);
+        results.push(res);
+      } catch (err) {
+        console.error(`Error guardando respuesta a pregunta ${ans.questionId}:`, err.message);
+      }
+    }
+
+    return { submissionId: finalSubId, results };
   },
 };
 
