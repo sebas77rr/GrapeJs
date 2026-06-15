@@ -100,6 +100,14 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
           <div class="answer-feedback" id="fb_${kiuId}"></div>
         </div>`;
 
+    } else if (type === 'NUMBER') {
+      inputHtml = `
+        <div class="answer-area" data-q="${kiuId}" data-type="number">
+          <input type="number" id="${qId}" class="text-input" placeholder="Ingresa un número..." autocomplete="off" />
+          <button class="submit-btn" onclick="submitAnswer('${escapeJs(kiuId)}', '${escapeJs(String(kiuId))}')">Enviar respuesta</button>
+          <div class="answer-feedback" id="fb_${kiuId}"></div>
+        </div>`;
+
     } else if (type === 'SINGLE_CHOICE' || type === 'MULTIPLE_CHOICE' || type === 'CHOICE') {
       const opts = Array.isArray(q.options) ? q.options : [];
       const isMulti = type === 'MULTIPLE_CHOICE';
