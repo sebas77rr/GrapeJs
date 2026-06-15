@@ -3,29 +3,27 @@ const router = express.Router();
 const kiuflowService = require("../services/kiuflowService");
 const { getValidToken } = require("../services/kiuflowAuth");
 
+// ──────────────────────────────────────────────────────────
 // GET /api/crm/channels
+// ──────────────────────────────────────────────────────────
 router.get("/channels", async (req, res) => {
   try {
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const channels = await kiuflowService.getChannels(subIdToUse);
-    // solo canales WhatsApp
-    const whatsappChannels = channels.filter(
-      (c) => c.type?.name === "WhatsApp",
-    );
-
+    const whatsappChannels = channels.filter(c => c.type?.name === "WhatsApp");
     res.json({ channels: whatsappChannels });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// ──────────────────────────────────────────────────────────
 // GET /api/crm/templates
+// ──────────────────────────────────────────────────────────
 router.get("/templates", async (req, res) => {
   try {
     const { channelId, sub_id } = req.query;
-    if (!channelId) {
-      return res.status(400).json({ error: "channelId es requerido" });
-    }
+    if (!channelId) return res.status(400).json({ error: "channelId es requerido" });
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const templates = await kiuflowService.getTemplates(channelId, subIdToUse);
     res.json({ templates });
@@ -35,27 +33,27 @@ router.get("/templates", async (req, res) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────
 // GET /api/crm/files
+// ──────────────────────────────────────────────────────────
 router.get("/files", async (req, res) => {
   try {
-    // Si no se pasa directoryId, Usara el 85 por defecto
-    const directoryId = req.query.directoryId
-      ? Number(req.query.directoryId)
-      : 85;
+    const directoryId = req.query.directoryId ? Number(req.query.directoryId) : 85;
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const filesResponse = await kiuflowService.getFiles(directoryId, subIdToUse);
-
-    const files = filesResponse.map((f) => ({
+    const files = filesResponse.map(f => ({
       ...f,
       url: `https://storage.googleapis.com/kiuflow/FJjQzdTc4EfU6ppKTtS2/${f.fileName}`,
     }));
-
     res.json({ files });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// ──────────────────────────────────────────────────────────
+// GET /api/crm/availability
+// ──────────────────────────────────────────────────────────
 router.get("/availability", async (req, res) => {
   try {
     const { date, sub_id } = req.query;
@@ -68,155 +66,129 @@ router.get("/availability", async (req, res) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────
 // POST /api/crm/appointment
+// Crea una cita y programa los 4 recordatorios de WhatsApp
+// (R1 inmediato, R2 24h antes, R3 3h antes, R4 5 min antes)
+// más el R5 de encuesta post-cita (1h después de endDate).
+// ──────────────────────────────────────────────────────────
 router.post("/appointment", async (req, res) => {
   try {
-    const { clientId, date, funnelId, sub_id } = req.body;
-    if (!clientId || !date)
+    const { clientId, date, funnelId, sub_id, reminders, surveyId, surveyChannelId } = req.body;
+    if (!clientId || !date) {
       return res.status(400).json({ error: "clientId y date son requeridos" });
+    }
 
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
     const axios = require("axios");
-    // Si viene el token del usuario (Dashboard) úsalo, si no usa el token de servicio del .env
-    const userToken = req.headers.authorization || "";
-    const serviceToken = userToken ? userToken : `Bearer ${await getValidToken()}`;
-    const authHeaders = {
-      'Authorization': serviceToken,
-      'Content-Type': 'application/json'
-    };
 
+    // Token: primero el del usuario (SSO desde el Builder), luego el de servicio
+    const authToken = req.headers.authorization || `Bearer ${await getValidToken()}`;
+    const authHeaders = { Authorization: authToken, "Content-Type": "application/json" };
+
+    // Obtener agente disponible para asignarlo a la cita
     let agentId = "";
     try {
-      const agentsRes = await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/agent/list`, {}, { headers: authHeaders });
-      const agents = agentsRes.data?.data || [];
-      if (agents.length > 0) agentId = String(agents[0].id);
+      const agentsRes = await axios.post(
+        `${API_URL}/api/v1/suscription/${subIdToUse}/agent/list`,
+        {},
+        { headers: authHeaders }
+      );
+      agentId = String(agentsRes.data?.data?.[0]?.id || "");
     } catch (e) {
-      console.warn("No se pudieron obtener agentes, se enviará vacío", e.message);
+      console.warn("No se pudieron obtener agentes:", e.message);
     }
 
-    // Extraer la fecha y hora cruda (ej: "2026-07-09T14:00:00") descartando el timezone
+    // Normalizar fecha: descartar timezone y tratar como UTC para evitar desfases de servidor
     const localStr = date.substring(0, 19);
-    
-    // Crear un objeto Date tratando la fecha local como si fuera UTC para poder manipularla sin desfase de servidor
-    const fakeUtcObj = new Date(localStr + "Z");
-    if (isNaN(fakeUtcObj.getTime())) {
-      throw new Error("Fecha invalida enviada desde el frontend");
-    }
-    
-    // Formato que espera KiuFlow (los numeros de la hora local con la Z pegada)
-    const isoDate = fakeUtcObj.toISOString();
-    
-    // Calcular endDate sumando 30 mins a nuestro fake UTC
-    const endObj = new Date(fakeUtcObj.getTime() + 30 * 60000);
-    const endIsoDate = endObj.toISOString();
+    const startObj = new Date(localStr + "Z");
+    if (isNaN(startObj.getTime())) throw new Error("Fecha inválida recibida desde el frontend");
+    const endObj = new Date(startObj.getTime() + 30 * 60000);
 
+    // Crear la cita
     const apptData = {
       clientId: String(clientId),
-      date: isoDate,
-      startDate: isoDate,
-      start: isoDate,
-      endDate: endIsoDate,
-      end: endIsoDate,
+      date: startObj.toISOString(),
+      startDate: startObj.toISOString(),
+      start: startObj.toISOString(),
+      endDate: endObj.toISOString(),
+      end: endObj.toISOString(),
       confirmed: "true",
       attended: "false",
       virtual: "true",
+      ...(agentId && { agentId }),
     };
-    if (agentId) apptData.agentId = agentId;
 
-    const resultRes = await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/create`, apptData, { headers: authHeaders });
+    const resultRes = await axios.post(
+      `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/create`,
+      apptData,
+      { headers: authHeaders }
+    );
     if (!resultRes.data.success) throw new Error(resultRes.data.message);
-    const result = resultRes.data.data;
+    const appointment = resultRes.data.data;
 
-    // Crear Recordatorios de cita R2, R3, R4 según flujo definido
-    const { reminders, surveyId, surveyChannelId, surveyLogoUrl, surveyColor } = req.body;
+    // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
     if (Array.isArray(reminders)) {
-      try {
-        // R1: Confirmación inmediata (index 0)
-        const rem1 = reminders[0];
-        if (rem1 && rem1.channelId) {
-          try {
-            await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
-              clientId: String(clientId),
-              channelId: rem1.channelId,
-              templateId: rem1.templateId || null,
-              content: rem1.content,
-              remindAt: new Date().toISOString(), // Inmediato (Ahora)
-            }, { headers: authHeaders });
-          } catch (err) {
-            console.error("Error creando R1 (Inmediato):", err.message);
-          }
-        }
+      // R1: Confirmación inmediata al agendar
+      const rem1 = reminders[0];
+      if (rem1?.channelId) {
+        try {
+          await axios.post(
+            `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
+            { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: new Date().toISOString() },
+            { headers: authHeaders }
+          );
+        } catch (err) { console.error("Error creando R1:", err.message); }
+      }
 
-        const offsets = [
-          24 * 3600000, // R2: 24h antes
-          3 * 3600000,  // R3: 3h antes
-          5 * 60000,    // R4: 5 mins antes
-        ];
-
-        for (let i = 0; i < offsets.length; i++) {
-          const rem = reminders[i + 1]; // R2=index 1, R3=index 2, R4=index 3
-          if (!rem || !rem.channelId) continue;
-
-          // Restamos el offset directamente al fake UTC
-          const remDate = new Date(fakeUtcObj.getTime() - offsets[i]);
-          const remindAt = remDate.toISOString();
-          
-          try {
-            await axios.post(`${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`, {
-              clientId: String(clientId),
-              channelId: rem.channelId,
-              templateId: rem.templateId || null,
-              content: rem.content,
-              remindAt,
-            }, { headers: authHeaders });
-          } catch (err) {
-            console.error(`Error creando R${i + 2}:`, err.message);
-          }
-        }
-      } catch (err) {
-        console.error("Error creando recordatorios de cita:", err.message);
+      // R2 (24h antes), R3 (3h antes), R4 (5 min antes)
+      const OFFSETS = [24 * 3600000, 3 * 3600000, 5 * 60000];
+      for (let i = 0; i < OFFSETS.length; i++) {
+        const rem = reminders[i + 1];
+        if (!rem?.channelId) continue;
+        const remindAt = new Date(startObj.getTime() - OFFSETS[i]).toISOString();
+        try {
+          await axios.post(
+            `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
+            { clientId: String(clientId), channelId: rem.channelId, templateId: rem.templateId || null, content: rem.content, remindAt },
+            { headers: authHeaders }
+          );
+        } catch (err) { console.error(`Error creando R${i + 2}:`, err.message); }
       }
     }
 
-    // ── Recordatorio de Encuesta Post-Cita (1 hora después de endDate) ──
-    if (surveyId && surveyChannelId) {
+    // ── R5: Recordatorio de Encuesta post-cita (1h después de que termina la cita) ──
+    // La URL solo lleva el fid (ID del Funnel). El servidor extrae logo/color internamente
+    // al renderizar la encuesta, sin exponer datos sensibles en la URL.
+    if (surveyId && surveyChannelId && funnelId) {
       try {
-        const domain = process.env.APP_DOMAIN || 'https://builder.kiuflow.online';
-        let surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}`;
-        if (surveyLogoUrl) surveyUrl += `&logo=${encodeURIComponent(surveyLogoUrl)}`;
-        if (surveyColor) surveyUrl += `&color=${encodeURIComponent(surveyColor)}`;
+        const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
+        const surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}&fid=${funnelId}`;
         const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
-
-        // Disparar 1 hora después de que termine la cita
         const surveyRemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
 
         await axios.post(
           `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-          {
-            clientId: String(clientId),
-            channelId: surveyChannelId,
-            content: surveyMessage,
-            remindAt: surveyRemindAt,
-          },
+          { clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: surveyRemindAt },
           { headers: authHeaders }
         );
-
-        console.log(`✅ Survey reminder scheduled for client ${clientId} at ${surveyRemindAt}`);
+        console.log(`✅ R5 (encuesta) programado para el cliente ${clientId} a las ${surveyRemindAt}`);
       } catch (surveyErr) {
-        // No bloqueamos la respuesta si falla el recordatorio de encuesta
-        console.error('Error creando recordatorio de encuesta:', surveyErr.message);
+        console.error("Error creando R5 (encuesta):", surveyErr.message);
       }
     }
 
-    res.status(201).json({ ok: true, appointment: result });
+    res.status(201).json({ ok: true, appointment });
   } catch (error) {
     console.error("ERROR APPOINTMENT:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
+// ──────────────────────────────────────────────────────────
 // GET /api/crm/surveys
+// ──────────────────────────────────────────────────────────
 router.get("/surveys", async (req, res) => {
   try {
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
@@ -228,12 +200,13 @@ router.get("/surveys", async (req, res) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────
 // GET /api/crm/surveys/:id/questions
+// ──────────────────────────────────────────────────────────
 router.get("/surveys/:id/questions", async (req, res) => {
   try {
-    const { id } = req.params;
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
-    const questions = await kiuflowService.getSurveyQuestions(id, subIdToUse);
+    const questions = await kiuflowService.getSurveyQuestions(req.params.id, subIdToUse);
     res.json({ questions });
   } catch (error) {
     console.error("ERROR survey questions:", error.message);

@@ -948,8 +948,6 @@ function renderFunnelForm(funnel) {
           sub_id: SUB_ID,
           surveyId: SURVEY_ID,
           surveyChannelId: SURVEY_CHANNEL_ID,
-          surveyLogoUrl: SURVEY_LOGO_URL,
-          surveyColor: SURVEY_COLOR,
           reminders: ${JSON.stringify(funnel.reminders || [])}
         })
       })

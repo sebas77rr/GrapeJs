@@ -294,46 +294,67 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
 
 /**
  * GET /s/:surveyId
- * Renderiza la página pública de la encuesta.
- * Query params: ?client=<clientId>&sub=<subId>
+ * Renderiza la página pública de la encuesta post-cita.
+ *
+ * Query params:
+ *   - client : ID del cliente que responde la encuesta
+ *   - sub    : ID de suscripción de KiuFlow
+ *   - fid    : ID del Funnel → el servidor extrae logo y color internamente (seguro)
+ *
+ * El logo y color NUNCA viajan en la URL. Se obtienen server-side
+ * desde la API de KiuFlow usando el fid, evitando manipulaciones.
  */
 router.get("/s/:surveyId", async (req, res) => {
   try {
     const { surveyId } = req.params;
-    const { client: clientId, sub, sub_id, logo, color } = req.query;
+    const { client: clientId, sub, sub_id, fid } = req.query;
     const subIdToUse = sub || sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
     if (!surveyId) return res.status(404).send("<h1>Encuesta no encontrada</h1>");
 
-    let surveyName = "Encuesta de Satisfacción";
-    let questions = [];
-
-    // MODO PREVIEW PARA VER EL DISEÑO SIN CONECTAR A KIUFLOW
-    if (surveyId === 'preview') {
+    // ── Modo preview: demo visual sin conectar a KiuFlow ──
+    if (surveyId === "preview") {
       return res.send(renderSurveyPage({
-        surveyId: 'preview',
-        surveyName: 'Encuesta de Satisfacción',
-        clientId: 'demo',
-        subId: 'demo',
+        surveyId: "preview",
+        surveyName: "Encuesta de Satisfacción",
+        clientId: "demo",
+        subId: "demo",
         apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
-        logoUrl: logo || '',
-        brandColor: color || '#DB2C52',
+        logoUrl: "",
+        brandColor: "#DB2C52",
         questions: [
-          { id: 101, type: 'SINGLE_CHOICE', text: '¿Qué tan dispuesto estarías a recomendar nuestro servicio?', options: ['1 (Nada)', '2', '3', '4', '5 (Totalmente)'] },
-          { id: 102, type: 'OPEN', text: 'Describe brevemente qué motiva tu calificación' },
-          { id: 103, type: 'SCALE', text: '¿Cómo calificarías la atención recibida?', min: 1, max: 10 },
-          { id: 104, type: 'MULTIPLE_CHOICE', text: '¿En cuáles aspectos debemos mejorar?', options: ['Tiempos de espera', 'Claridad de la información', 'Amabilidad del personal', 'Opciones de pago'] }
-        ]
+          { id: 101, type: "SINGLE_CHOICE", text: "¿Qué tan dispuesto estarías a recomendar nuestro servicio?", options: ["1 (Nada)", "2", "3", "4", "5 (Totalmente)"] },
+          { id: 102, type: "OPEN", text: "Describe brevemente qué motiva tu calificación" },
+          { id: 103, type: "SCALE", text: "¿Cómo calificarías la atención recibida?", min: 1, max: 10 },
+          { id: 104, type: "MULTIPLE_CHOICE", text: "¿En cuáles aspectos debemos mejorar?", options: ["Tiempos de espera", "Claridad de la información", "Amabilidad del personal", "Opciones de pago"] },
+        ],
       }));
     }
 
-    // Traer la encuesta y sus preguntas desde KiuFlow
+    // ── Obtener logo y color de forma segura desde el servidor ──
+    // Consultamos KiuFlow con el fid para extraer los datos de estilo
+    // sin exponerlos nunca en la URL pública.
+    let logoUrl    = "";
+    let brandColor = "#DB2C52";
+
+    if (fid) {
+      try {
+        const kfRes = await axios.post(`${API_URL}/api/v1/webpage/${fid}/get`);
+        const jd = kfRes.data?.data?.jsonData || {};
+        logoUrl    = jd.use_funnel_logo ? (jd.logo_url || "") : (jd.survey_logo_url || "");
+        brandColor = jd.survey_highlight_color || brandColor;
+      } catch (e) {
+        console.warn("No se pudo obtener datos de estilo del Funnel:", e.message);
+      }
+    }
+
+    // ── Cargar nombre y preguntas de la encuesta desde KiuFlow ──
+    let surveyName = "Encuesta de Satisfacción";
+    let questions  = [];
 
     try {
       const surveyRes = await kiuflowService.getSurvey(surveyId, subIdToUse);
-      if (surveyRes && (surveyRes.name || surveyRes.data?.name)) {
-        surveyName = surveyRes.name || surveyRes.data?.name || surveyName;
-      }
+      surveyName = surveyRes?.name || surveyRes?.data?.name || surveyName;
     } catch (e) {
       console.warn("No se pudo obtener nombre de encuesta:", e.message);
     }
@@ -342,19 +363,18 @@ router.get("/s/:surveyId", async (req, res) => {
       const questionsRes = await kiuflowService.getSurveyQuestions(surveyId, subIdToUse);
       questions = Array.isArray(questionsRes) ? questionsRes : (questionsRes?.data || questionsRes?.questions || []);
     } catch (e) {
-      console.warn("No se pudieron obtener preguntas:", e.message);
+      console.warn("No se pudieron obtener preguntas de encuesta:", e.message);
     }
 
-    const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
     const html = renderSurveyPage({
       surveyId,
       surveyName,
       clientId: clientId || "",
       subId: subIdToUse,
       questions,
-      apiBase: domain,
-      logoUrl: logo || "",
-      brandColor: color || "#DB2C52",
+      apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
+      logoUrl,
+      brandColor,
     });
 
     res.send(html);
