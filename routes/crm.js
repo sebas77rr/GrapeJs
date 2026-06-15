@@ -100,9 +100,7 @@ router.post("/appointment", async (req, res) => {
       console.warn("No se pudieron obtener agentes:", e.message);
     }
 
-    // Normalizar fecha: descartar timezone y tratar como UTC para evitar desfases de servidor
-    const localStr = date.substring(0, 19);
-    const startObj = new Date(localStr + "Z");
+    const startObj = new Date(date);
     if (isNaN(startObj.getTime())) throw new Error("Fecha inválida recibida desde el frontend");
     const endObj = new Date(startObj.getTime() + 30 * 60000);
 
@@ -130,23 +128,11 @@ router.post("/appointment", async (req, res) => {
 
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
     if (Array.isArray(reminders)) {
-      // Extraer el offset de la zona horaria desde la fecha original (ej. -05:00)
-      let offsetMs = -5 * 3600000; // Por defecto UTC-5 si no hay info
-      if (date.length > 19) {
-        const tzStr = date.substring(19); // ej: -05:00
-        if (tzStr.length === 6) {
-          const sign = tzStr[0] === '+' ? 1 : -1;
-          const h = parseInt(tzStr.substring(1,3)) || 0;
-          const m = parseInt(tzStr.substring(4,6)) || 0;
-          offsetMs = sign * (h * 60 + m) * 60000;
-        }
-      }
-      
-      // R1: Confirmación inmediata al agendar (usando hora local para no dispararse 5h en el futuro)
+      // R1: Confirmación inmediata al agendar
       const rem1 = reminders[0];
       if (rem1?.channelId) {
         try {
-          const r1RemindAt = new Date(Date.now() + offsetMs + 10000).toISOString().substring(0, 19) + "Z";
+          const r1RemindAt = new Date(Date.now() + 10000).toISOString();
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
             { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: r1RemindAt },
@@ -179,14 +165,14 @@ router.post("/appointment", async (req, res) => {
         const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
         const surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}&fid=${funnelId}`;
         const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
-        const surveyRemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
+        const r5RemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
 
         await axios.post(
           `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-          { clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: surveyRemindAt },
+          { clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: r5RemindAt },
           { headers: authHeaders }
         );
-        console.log(`✅ R5 (encuesta) programado para el cliente ${clientId} a las ${surveyRemindAt}`);
+        console.log(`✅ R5 (encuesta) programado para el cliente ${clientId} a las ${r5RemindAt}`);
       } catch (surveyErr) {
         console.error("Error creando R5 (encuesta):", surveyErr.message);
       }
