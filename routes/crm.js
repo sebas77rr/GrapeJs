@@ -130,13 +130,26 @@ router.post("/appointment", async (req, res) => {
 
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
     if (Array.isArray(reminders)) {
-      // R1: Confirmación inmediata al agendar
+      // Extraer el offset de la zona horaria desde la fecha original (ej. -05:00)
+      let offsetMs = -5 * 3600000; // Por defecto UTC-5 si no hay info
+      if (date.length > 19) {
+        const tzStr = date.substring(19); // ej: -05:00
+        if (tzStr.length === 6) {
+          const sign = tzStr[0] === '+' ? 1 : -1;
+          const h = parseInt(tzStr.substring(1,3)) || 0;
+          const m = parseInt(tzStr.substring(4,6)) || 0;
+          offsetMs = sign * (h * 60 + m) * 60000;
+        }
+      }
+      
+      // R1: Confirmación inmediata al agendar (usando hora local para no dispararse 5h en el futuro)
       const rem1 = reminders[0];
       if (rem1?.channelId) {
         try {
+          const r1RemindAt = new Date(Date.now() + offsetMs + 10000).toISOString().substring(0, 19) + "Z";
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-            { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: new Date(Date.now() + 10000).toISOString() },
+            { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: r1RemindAt },
             { headers: authHeaders }
           );
         } catch (err) { console.error("Error creando R1:", err.message); }
