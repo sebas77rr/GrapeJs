@@ -698,6 +698,13 @@ function renderFunnelForm(funnel) {
         <span class="cal-month" id="calMonth">Junio 2026</span>
         <button class="cal-nav" id="nextMonth">›</button>
       </div>
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.3rem; line-height: 1;">🔥</span>
+        <div>
+          <strong style="color: #fca5a5; font-size: 0.85rem; display: block; margin-bottom: 2px;">Alta demanda esta semana</strong>
+          <span style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">Los horarios con punto verde (disponibles) se están agotando rápido.</span>
+        </div>
+      </div>
       <div class="cal-grid" id="calGrid"></div>
 
       <div id="slotsContainer"></div>
@@ -811,6 +818,13 @@ function renderFunnelForm(funnel) {
         if (thisDate < today) {
           dayEl.classList.add('disabled');
         } else {
+          // ESTRATEGIA VISUAL: Añadir punto verde (has-slots) en días hábiles próximos (próximos 14 días)
+          var isWeekend = thisDate.getDay() === 0 || thisDate.getDay() === 6;
+          var daysDiff = Math.floor((thisDate - today) / (1000 * 60 * 60 * 24));
+          if (!isWeekend && daysDiff >= 0 && daysDiff <= 14) {
+            dayEl.classList.add('has-slots');
+          }
+
           var dateStr = formatDate(currentYear, currentMonth + 1, d);
           if (thisDate.toDateString() === today.toDateString()) dayEl.classList.add('today');
           if (selectedDate === dateStr) dayEl.classList.add('selected');
