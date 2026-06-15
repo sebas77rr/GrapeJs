@@ -220,7 +220,7 @@ router.get("/p/*", async (req, res) => {
 });
 
 // GET /f/* (Video Funnel Landing) - excluye rutas que terminan en /form
-router.get(/^\/f\/(?!.*\/form$).+/, async (req, res) => {
+router.get(/^\/f\/(?!.*(\/form|\/survey)$).+/, async (req, res) => {
   try {
     const parts = req.path.split("/");
     const code = parts[2];
