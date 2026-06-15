@@ -91,7 +91,10 @@ router.get("/:funnelId/leads", async (req, res) => {
   try {
     const subIdToUse = req.query.sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const clients = await kiuflowService.getClients(subIdToUse);
-    const safeClients = Array.isArray(clients) ? clients : [];
+    let safeClients = [];
+    if (Array.isArray(clients)) safeClients = clients;
+    else if (clients && Array.isArray(clients.data)) safeClients = clients.data;
+    else if (clients && Array.isArray(clients.items)) safeClients = clients.items;
 
     // Extrae un custom field por nombre (soporta array de objetos o mapa directo)
     const getCustomField = (client, fieldName) => {
@@ -152,7 +155,12 @@ router.get("/:funnelId/leads/export", async (req, res) => {
       return fields?.[fieldName];
     };
 
-    const leads = (Array.isArray(clients) ? clients : []).filter(c => {
+    let safeClients = [];
+    if (Array.isArray(clients)) safeClients = clients;
+    else if (clients && Array.isArray(clients.data)) safeClients = clients.data;
+    else if (clients && Array.isArray(clients.items)) safeClients = clients.items;
+
+    const leads = safeClients.filter(c => {
       const source = getCustomField(c, "leadSource") || getCustomField(c, "lead_source") || c.source || "";
       return String(source) === String(funnelId);
     });
