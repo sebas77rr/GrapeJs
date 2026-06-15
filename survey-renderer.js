@@ -497,6 +497,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
     var answered = new Set();
     var API_BASE = '${safeApiBase}';
     var SURVEY_ID = '${escapeHtml(String(surveyId))}';
+    var FUNNEL_CODE = '${escapeHtml(String(funnelCode || ''))}';
     var CLIENT_ID = '${escapeHtml(String(clientId || ''))}';
     var SUB_ID = '${escapeHtml(String(subId || ''))}';
     window.surveyAnswers = {};
@@ -546,13 +547,12 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
         };
       });
 
-      fetch(API_BASE + '/api/public/survey/' + SURVEY_ID + '/submit-all', {
+      fetch(API_BASE + '/api/public/funnel/' + FUNNEL_CODE + '/survey/submit-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          surveyId: SURVEY_ID,
           clientId: CLIENT_ID,
-          sub_id: SUB_ID,
+          subId: SUB_ID,
           answers: answersArray
         })
       })

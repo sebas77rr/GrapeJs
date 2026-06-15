@@ -304,74 +304,53 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
 // ──────────────────────────────────────────────────────────
 
 /**
- * GET /s/:surveyId
- * Renderiza la página pública de la encuesta post-cita.
- *
- * Query params:
- *   - client : ID del cliente que responde la encuesta
- *   - sub    : ID de suscripción de KiuFlow
- *   - fid    : ID del Funnel → el servidor extrae logo y color internamente (seguro)
- *
- * El logo y color NUNCA viajan en la URL. Se obtienen server-side
- * desde la API de KiuFlow usando el fid, evitando manipulaciones.
+ * GET /f/:code/survey
+ * Renderiza la página pública de la encuesta asociada a un Funnel.
+ * Extrae el JWT y el surveyId del JSON del Funnel para consultar la API.
  */
-router.get("/s/:surveyId", async (req, res) => {
+router.get("/f/:code/survey", async (req, res) => {
   try {
-    const { surveyId } = req.params;
-    const { client: clientId, sub, sub_id, fid } = req.query;
-    const subIdToUse = sub || sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const { code } = req.params;
+    const { client: clientId } = req.query;
 
-    if (!surveyId) return res.status(404).send("<h1>Encuesta no encontrada</h1>");
+    if (!code) return res.status(404).send("<h1>Funnel no especificado</h1>");
 
-    // ── Modo preview: demo visual sin conectar a KiuFlow ──
-    if (surveyId === "preview") {
-      return res.send(renderSurveyPage({
-        surveyId: "preview",
-        surveyName: "Encuesta de Satisfacción",
-        clientId: "demo",
-        subId: "demo",
-        apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
-        logoUrl: "",
-        brandColor: "#DB2C52",
-        questions: [
-          { id: 101, type: "SINGLE_CHOICE", text: "¿Qué tan dispuesto estarías a recomendar nuestro servicio?", options: ["1 (Nada)", "2", "3", "4", "5 (Totalmente)"] },
-          { id: 102, type: "OPEN", text: "Describe brevemente qué motiva tu calificación" },
-          { id: 103, type: "SCALE", text: "¿Cómo calificarías la atención recibida?", min: 1, max: 10 },
-          { id: 104, type: "MULTIPLE_CHOICE", text: "¿En cuáles aspectos debemos mejorar?", options: ["Tiempos de espera", "Claridad de la información", "Amabilidad del personal", "Opciones de pago"] },
-        ],
-      }));
+    // 1. Consultar el Funnel público
+    let funnelPage = null;
+    try {
+      const kfRes = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
+      funnelPage = kfRes.data?.data;
+    } catch (e) {
+      console.warn("Error buscando funnel para encuesta:", e.message);
     }
 
-    // ── Obtener logo y color de forma segura desde el servidor ──
-    // Consultamos KiuFlow con el fid para extraer los datos de estilo
-    // sin exponerlos nunca en la URL pública.
-    let logoUrl    = "";
-    let brandColor = "#DB2C52";
+    if (!funnelPage) return res.status(404).send("<h1>Encuesta no encontrada (Funnel inválido)</h1>");
 
-    if (fid) {
-      try {
-        const kfRes = await axios.post(`${API_URL}/api/v1/webpage/${fid}/get`);
-        const jd = kfRes.data?.data?.jsonData || {};
-        logoUrl    = jd.use_funnel_logo ? (jd.logo_url || "") : (jd.survey_logo_url || "");
-        brandColor = jd.survey_highlight_color || brandColor;
-      } catch (e) {
-        console.warn("No se pudo obtener datos de estilo del Funnel:", e.message);
-      }
+    const jwtToken = funnelPage.jwt;
+    const jd = funnelPage.jsonData || {};
+    const surveyId = jd.survey_id;
+    const subIdToUse = funnelPage.suscription_id || funnelPage.subscription_id || jd.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+
+    if (!surveyId) {
+      return res.status(404).send("<h1>Este Funnel no tiene una encuesta asociada</h1>");
     }
 
-    // ── Cargar nombre y preguntas de la encuesta desde KiuFlow ──
+    let logoUrl = jd.use_funnel_logo ? (jd.logo_url || "") : (jd.survey_logo_url || "");
+    let brandColor = jd.survey_highlight_color || "#DB2C52";
+
+    // 2. Cargar nombre y preguntas de la encuesta usando el JWT del Funnel
     let surveyName = "Encuesta de Satisfacción";
-    let questions  = [];
+    let questions = [];
 
     try {
-      const surveyRes = await kiuflowService.getSurvey(surveyId, subIdToUse);
+      const surveyRes = await kiuflowService.getSurvey(surveyId, subIdToUse, jwtToken);
       surveyName = surveyRes?.name || surveyRes?.data?.name || surveyName;
     } catch (e) {
       console.warn("No se pudo obtener nombre de encuesta:", e.message);
     }
 
     try {
-      const questionsRes = await kiuflowService.getSurveyQuestions(surveyId, subIdToUse);
+      const questionsRes = await kiuflowService.getSurveyQuestions(surveyId, subIdToUse, jwtToken);
       questions = Array.isArray(questionsRes) ? questionsRes : (questionsRes?.data || questionsRes?.questions || []);
     } catch (e) {
       console.warn("No se pudieron obtener preguntas de encuesta:", e.message);
@@ -380,6 +359,7 @@ router.get("/s/:surveyId", async (req, res) => {
     const html = renderSurveyPage({
       surveyId,
       surveyName,
+      funnelCode: code, // Pasamos el funnelCode para el submit final
       clientId: clientId || "",
       subId: subIdToUse,
       questions,
@@ -396,31 +376,43 @@ router.get("/s/:surveyId", async (req, res) => {
 });
 
 /**
- * POST /api/public/survey/:surveyId/submit-all
- * Guarda todas las respuestas de una encuesta creando un submission en KiuFlow.
- * Body: { clientId, sub_id, answers: [{ questionId, answer, type }] }
+ * POST /api/public/funnel/:code/survey/submit-all
+ * Recibe todas las respuestas de una vez desde el frontend y las envía a KiuFlow usando el JWT del Funnel.
  */
-router.post("/api/public/survey/:surveyId/submit-all", async (req, res) => {
+router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
   try {
-    const { surveyId } = req.params;
-    const { clientId, sub_id, answers } = req.body;
-    const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+    const { code } = req.params;
+    const { clientId, answers, subId } = req.body;
 
-    if (!surveyId || !clientId || !Array.isArray(answers)) {
-      return res.status(400).json({ error: "Faltan parámetros requeridos o answers no es un arreglo" });
+    if (!code || !answers || !Array.isArray(answers)) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    const result = await kiuflowService.submitSurveyComplete(
-      surveyId,
-      clientId,
-      answers,
-      subIdToUse
-    );
+    // 1. Obtener JWT y surveyId del Funnel
+    let funnelPage = null;
+    try {
+      const kfRes = await axios.post(`${API_URL}/api/v1/webpage/${code}/get`);
+      funnelPage = kfRes.data?.data;
+    } catch (e) {
+      console.error("Error validando funnel en submit:", e.message);
+      return res.status(404).json({ error: "Funnel no encontrado o inactivo" });
+    }
 
-    res.json({ ok: true, result });
+    const jwtToken = funnelPage?.jwt;
+    const surveyId = funnelPage?.jsonData?.survey_id;
+    const subIdToUse = subId || funnelPage?.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
+
+    if (!jwtToken || !surveyId) {
+      return res.status(400).json({ error: "Este funnel no tiene encuesta válida" });
+    }
+
+    // 2. Enviar las respuestas a KiuFlow usando el JWT
+    await kiuflowService.submitSurveyComplete(surveyId, clientId, answers, subIdToUse, jwtToken);
+
+    res.json({ success: true });
   } catch (error) {
-    console.error("Error guardando respuestas de encuesta:", error.message);
-    res.status(500).json({ error: error.message });
+    console.error("Error guardando encuesta:", error.message);
+    res.status(500).json({ error: "Error interno al guardar las respuestas" });
   }
 });
 

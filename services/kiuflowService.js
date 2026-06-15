@@ -44,6 +44,20 @@ async function post(endpoint, data = {}) {
   }
 }
 
+async function postWithToken(endpoint, data = {}, jwtToken) {
+  const url = `${API_URL}${endpoint}`;
+  try {
+    const response = await axios.post(url, data, {
+      headers: { Authorization: `Bearer ${jwtToken}`, "Content-Type": "application/json" }
+    });
+    if (!response.data.success) throw new Error(response.data.message || "Error en la llamada a la API");
+    return response.data.data;
+  } catch (error) {
+    if (error.response) throw new Error(`API Error: ${error.response.data.message || error.message}`);
+    throw error;
+  }
+}
+
 async function get(endpoint) {
   const token = await getValidToken();
   const url = `${API_URL}${endpoint}`;
@@ -242,21 +256,23 @@ const kiuflowService = {
     return post(`/api/v1/suscription/${suscriptionId}/survey/list`, {});
   },
 
-  getSurvey: async (surveyId, suscriptionId = SUB_ID) => {
-    return postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/get`, {});
+  getSurvey: async (surveyId, suscriptionId = SUB_ID, jwtToken = null) => {
+    const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/get`;
+    return jwtToken ? postWithToken(endpoint, {}, jwtToken) : postPublic(endpoint, {});
   },
 
-  getSurveyQuestions: async (surveyId, suscriptionId = SUB_ID) => {
-    return postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`, {});
+  getSurveyQuestions: async (surveyId, suscriptionId = SUB_ID, jwtToken = null) => {
+    const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`;
+    return jwtToken ? postWithToken(endpoint, {}, jwtToken) : postPublic(endpoint, {});
   },
 
-  submitSurveyComplete: async (surveyId, clientId, answers, suscriptionId = SUB_ID) => {
+  submitSurveyComplete: async (surveyId, clientId, answers, suscriptionId = SUB_ID, jwtToken = null) => {
     // Paso 1: Crear el Submission (el "sobre")
     let submission;
     try {
-      submission = await postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/create`, {
-        clientId: String(clientId)
-      });
+      const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/create`;
+      const payload = { clientId: String(clientId) };
+      submission = jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await postPublic(endpoint, payload);
     } catch (err) {
       throw new Error(`Error creando submission: ${err.message}`);
     }
@@ -284,7 +300,8 @@ const kiuflowService = {
       }
 
       try {
-        const res = await postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/response/create`, payload);
+        const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/response/create`;
+        const res = jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await postPublic(endpoint, payload);
         results.push(res);
       } catch (err) {
         console.error(`Error guardando respuesta a pregunta ${ans.questionId}:`, err.message);
@@ -293,9 +310,9 @@ const kiuflowService = {
 
     // Paso 3: Cerrar la encuesta (status: COMPLETED)
     try {
-      await postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/update`, {
-        status: "COMPLETED"
-      });
+      const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/update`;
+      const payload = { status: "COMPLETED" };
+      jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await postPublic(endpoint, payload);
     } catch (err) {
       console.error(`Error cerrando el submission ${finalSubId}:`, err.message);
     }
