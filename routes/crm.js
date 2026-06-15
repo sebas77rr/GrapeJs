@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 const kiuflowService = require("../services/kiuflowService");
 const { getValidToken } = require("../services/kiuflowAuth");
 
@@ -43,7 +44,7 @@ router.get("/files", async (req, res) => {
     const filesResponse = await kiuflowService.getFiles(directoryId, subIdToUse);
     const files = filesResponse.map(f => ({
       ...f,
-      url: `https://storage.googleapis.com/kiuflow/FJjQzdTc4EfU6ppKTtS2/${f.fileName}`,
+      url: `https://storage.googleapis.com/kiuflow/${process.env.GCS_BUCKET_PATH || "FJjQzdTc4EfU6ppKTtS2"}/${f.fileName}`,
     }));
     res.json({ files });
   } catch (error) {
@@ -81,7 +82,6 @@ router.post("/appointment", async (req, res) => {
 
     const subIdToUse = sub_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
     const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
-    const axios = require("axios");
 
     // Token: primero el del usuario (SSO desde el Builder), luego el de servicio
     const authToken = req.headers.authorization || `Bearer ${await getValidToken()}`;
@@ -136,7 +136,7 @@ router.post("/appointment", async (req, res) => {
         try {
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-            { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: new Date().toISOString() },
+            { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: new Date(Date.now() + 10000).toISOString() },
             { headers: authHeaders }
           );
         } catch (err) { console.error("Error creando R1:", err.message); }

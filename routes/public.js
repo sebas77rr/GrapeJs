@@ -5,6 +5,16 @@ const kiuflowService = require("../services/kiuflowService");
 const { renderFunnelLanding, renderFunnelForm } = require("../funnel-renderer");
 const { renderSurveyPage } = require("../survey-renderer");
 
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
 
 // GET /api/public/appointment
@@ -90,6 +100,7 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
 
     // 1. Update the appointment with the new date
     const newStartDate = new Date(date);
+    if (isNaN(newStartDate.getTime())) return res.status(400).json({ error: "Fecha inválida" });
     const newEndDate = new Date(newStartDate.getTime() + 30 * 60000); // Asumimos 30 min por defecto
     const updatedAppt = await kiuflowService.updateAppointment(appointment_id, { 
       date,
@@ -136,9 +147,9 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
         for (let i = 0; i < offsets.length; i++) {
           const rem = reminders[i + 1]; // R2=index 1, R3=index 2, R4=index 3
           if (!rem || !rem.channelId) continue;
-          if (offsets[i] <= 0) continue; // ya pasó ese momento
-
-          const remindAt = new Date(ahora.getTime() + offsets[i]).toISOString();
+          
+          const remindAt = new Date(citaDate.getTime() - offsets[i]).toISOString();
+          if (new Date(remindAt) <= ahora) continue; // skip si ya pasó
           try {
             await kiuflowService.createReminder({
               clientId: String(client_id),
@@ -184,8 +195,8 @@ router.get("/p/*", async (req, res) => {
     const css = landing.jsonData?.gjs_css || "";
     const subIdToInject = landing.suscription_id || landing.subscription_id || landing.suscriptionId || landing.jsonData?.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID || "";
     const jwtScript = `<script>
-      window.KF_PUBLIC_JWT = "${landing.jwt || ''}";
-      window.KF_SUB_ID = "${subIdToInject}";
+      window.KF_PUBLIC_JWT = ${JSON.stringify(landing.jwt || '')};
+      window.KF_SUB_ID = ${JSON.stringify(subIdToInject)};
     </script>`;
 
     const finalHtml = `
@@ -194,7 +205,7 @@ router.get("/p/*", async (req, res) => {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${landing.name || "Landing"}</title>
+          <title>${escapeHtml(landing.name || "Landing")}</title>
           <style>${css}</style>
           ${jwtScript}
         </head>

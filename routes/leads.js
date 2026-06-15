@@ -65,7 +65,7 @@ router.post("/:funnelId/leads", async (req, res) => {
       try {
         await axios.post(
           `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-          { clientId, channelId: r1.channelId, templateId: r1.templateId || null, content: r1.content, remindAt },
+          { clientId: String(clientId), channelId: r1.channelId, templateId: r1.templateId || null, content: r1.content, remindAt },
           { headers: authHeaders }
         );
       } catch (err) {
@@ -177,20 +177,23 @@ router.get("/:funnelId/leads/export", async (req, res) => {
 
         const rowData = { id: lead.id || "", fecha: lead.createdAt || lead.created_at || "", nombre: lead.name || "", telefono: lead.phone || "", email: lead.email || "", ...fieldsObj };
         const rowValues = headers.map(h => {
-          let val = rowData[h] || "";
-          if (typeof val === "string") {
-            val = val.replace(/"/g, '""');
-            if (val.includes(",") || val.includes("\n")) val = `"${val}"`;
-          }
+          let val = rowData[h] ?? "";
+          // Convertir cualquier tipo a string de forma segura
+          if (typeof val === "object") val = JSON.stringify(val);
+          else val = String(val);
+          // Escape para CSV: comillas dobles y wrapping si contiene delimitadores
+          val = val.replace(/"/g, '""');
+          if (val.includes(",") || val.includes("\n") || val.includes('"')) val = `"${val}"`;
           return val;
         });
         csvRows.push(rowValues.join(","));
       }
     }
 
-    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename=leads_funnel_${funnelId}.csv`);
-    res.send(csvRows.join("\n"));
+    // BOM (\uFEFF) para que Excel abra el CSV con tildes y ñ correctamente
+    res.send("\uFEFF" + csvRows.join("\n"));
   } catch (error) {
     console.error("Error exportando leads:", error.message);
     res.status(500).json({ error: "Error exportando leads" });

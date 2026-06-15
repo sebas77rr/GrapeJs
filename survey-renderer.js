@@ -15,6 +15,18 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function escapeJs(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/</g, '\\x3c')
+    .replace(/>/g, '\\x3e');
+}
+
 /**
  * Renders the complete survey HTML page.
  * @param {object} opts
@@ -26,12 +38,13 @@ function escapeHtml(str) {
  * @param {string}   [opts.apiBase] - Base URL of the builder backend
  */
 function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52' }) {
-  const totalQ = Array.isArray(questions) ? questions.length : 0;
+  const validQuestions = (questions || []).filter(q => q != null);
+  const totalQ = validQuestions.length;
   const safeTitle = escapeHtml(surveyName || 'Encuesta de Satisfacción');
-  const safeApiBase = escapeHtml(apiBase);
+  const safeApiBase = escapeJs(apiBase);
 
   // Build question HTML blocks
-  const questionsHtml = (questions || []).map((q, idx) => {
+  const questionsHtml = validQuestions.map((q, idx) => {
     const num = idx + 1;
     const qText = escapeHtml(q.text || q.title || q.question || q.name || q.label || q.content || q.body || `Pregunta ${num}`);
     const qId = `q_${q.id || idx}`;
@@ -51,7 +64,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
             placeholder="Escribe tu respuesta aquí..."
             autocomplete="off"
           />
-          <button class="submit-btn" onclick="submitAnswer('${kiuId}', '${escapeHtml(String(kiuId))}')">
+          <button class="submit-btn" onclick="submitAnswer('${escapeJs(kiuId)}', '${escapeJs(String(kiuId))}')">
             Enviar respuesta
           </button>
           <div class="answer-feedback" id="fb_${kiuId}"></div>
@@ -66,7 +79,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
             placeholder="Escribe tu respuesta aquí..."
             rows="3"
           ></textarea>
-          <button class="submit-btn" onclick="submitAnswer('${kiuId}', '${escapeHtml(String(kiuId))}')">
+          <button class="submit-btn" onclick="submitAnswer('${escapeJs(kiuId)}', '${escapeJs(String(kiuId))}')">
             Enviar respuesta
           </button>
           <div class="answer-feedback" id="fb_${kiuId}"></div>
@@ -82,7 +95,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
       inputHtml = `
         <div class="answer-area" data-q="${kiuId}" data-type="scale">
           <div class="scale-row">
-            ${nums.map(n => `<button class="scale-btn" onclick="selectScale(this, '${kiuId}', '${n}')">${n}</button>`).join('')}
+            ${nums.map(n => `<button class="scale-btn" onclick="selectScale(this, '${escapeJs(kiuId)}', '${n}')">${n}</button>`).join('')}
           </div>
           <div class="answer-feedback" id="fb_${kiuId}"></div>
         </div>`;
@@ -96,10 +109,11 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
           <div class="choice-row">
             ${opts.map(o => {
               const label = escapeHtml(typeof o === 'string' ? o : (o.option || o.text || o.name || String(o)));
-              return `<button class="choice-btn" onclick="selectChoice(this, '${kiuId}', '${label}', '${btnMode}')">${label}</button>`;
+              const rawLabel = typeof o === 'string' ? o : (o.option || o.text || o.name || String(o));
+              return `<button class="choice-btn" onclick="selectChoice(this, '${escapeJs(kiuId)}', '${escapeJs(rawLabel)}', '${btnMode}')">${label}</button>`;
             }).join('')}
           </div>
-          ${isMulti ? `<button class="submit-btn multi-submit" onclick="submitMulti('${kiuId}')" style="margin-top:12px">Confirmar selección</button>` : ''}
+          ${isMulti ? `<button class="submit-btn multi-submit" onclick="submitMulti('${escapeJs(kiuId)}')" style="margin-top:12px">Confirmar selección</button>` : ''}
           <div class="answer-feedback" id="fb_${kiuId}"></div>
         </div>`;
 
@@ -108,7 +122,7 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
       inputHtml = `
         <div class="answer-area" data-q="${kiuId}" data-type="text">
           <input type="text" id="${qId}" class="text-input" placeholder="Escribe tu respuesta..." autocomplete="off" />
-          <button class="submit-btn" onclick="submitAnswer('${kiuId}', '${escapeHtml(String(kiuId))}')">Enviar respuesta</button>
+          <button class="submit-btn" onclick="submitAnswer('${escapeJs(kiuId)}', '${escapeJs(String(kiuId))}')">Enviar respuesta</button>
           <div class="answer-feedback" id="fb_${kiuId}"></div>
         </div>`;
     }
@@ -509,7 +523,10 @@ function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, ap
           sub_id: SUB_ID
         })
       })
-      .then(function(r) { return r.json(); })
+      .then(function(r) { 
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json(); 
+      })
       .then(function(data) {
         if (callback) callback(null, data);
       })
