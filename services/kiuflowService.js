@@ -243,18 +243,18 @@ const kiuflowService = {
   },
 
   getSurvey: async (surveyId, suscriptionId = SUB_ID) => {
-    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/get`, {});
+    return postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/get`, {});
   },
 
   getSurveyQuestions: async (surveyId, suscriptionId = SUB_ID) => {
-    return post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`, {});
+    return postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`, {});
   },
 
   submitSurveyComplete: async (surveyId, clientId, answers, suscriptionId = SUB_ID) => {
     // Paso 1: Crear el Submission (el "sobre")
     let submission;
     try {
-      submission = await post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/create`, {
+      submission = await postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/create`, {
         clientId: String(clientId)
       });
     } catch (err) {
@@ -284,7 +284,7 @@ const kiuflowService = {
       }
 
       try {
-        const res = await post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/response/create`, payload);
+        const res = await postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/response/create`, payload);
         results.push(res);
       } catch (err) {
         console.error(`Error guardando respuesta a pregunta ${ans.questionId}:`, err.message);
@@ -293,7 +293,7 @@ const kiuflowService = {
 
     // Paso 3: Cerrar la encuesta (status: COMPLETED)
     try {
-      await post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/update`, {
+      await postPublic(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/update`, {
         status: "COMPLETED"
       });
     } catch (err) {
