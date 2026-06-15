@@ -291,6 +291,15 @@ const kiuflowService = {
       }
     }
 
+    // Paso 3: Cerrar la encuesta (status: COMPLETED)
+    try {
+      await post(`/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/update`, {
+        status: "COMPLETED"
+      });
+    } catch (err) {
+      console.error(`Error cerrando el submission ${finalSubId}:`, err.message);
+    }
+
     return { submissionId: finalSubId, results };
   },
 };
