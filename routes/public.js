@@ -101,13 +101,13 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
     // 1. Update the appointment with the new date
     const newStartDate = new Date(date);
     if (isNaN(newStartDate.getTime())) return res.status(400).json({ error: "Fecha inválida" });
-    const newEndDate = new Date(newStartDate.getTime() + 30 * 60000); // Asumimos 30 min por defecto
+    const endObj = new Date(newStartDate.getTime() + 30 * 60000); // Asumimos 30 min por defecto
     const updatedAppt = await kiuflowService.updateAppointment(appointment_id, { 
-      date,
-      startDate: date,
-      endDate: newEndDate.toISOString(),
-      start: date,
-      end: newEndDate.toISOString(),
+      date: new Date(date).toISOString().substring(0, 19),
+      startDate: new Date(date).toISOString().substring(0, 19),
+      start: new Date(date).toISOString().substring(0, 19),
+      endDate: endObj.toISOString().substring(0, 19),
+      end: endObj.toISOString().substring(0, 19),
       confirmed: "true" 
     }, sub_id);
 
@@ -148,7 +148,7 @@ router.post("/api/public/appointment/reschedule", async (req, res) => {
           const rem = reminders[i + 1]; // R2=index 1, R3=index 2, R4=index 3
           if (!rem || !rem.channelId) continue;
           
-          const remindAt = new Date(citaDate.getTime() - offsets[i]).toISOString();
+          const remindAt = new Date(citaDate.getTime() - offsets[i]).toISOString().substring(0, 19);
           if (new Date(remindAt) <= ahora) continue; // skip si ya pasó
           try {
             await kiuflowService.createReminder({
