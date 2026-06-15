@@ -818,10 +818,10 @@ function renderFunnelForm(funnel) {
         if (thisDate < today) {
           dayEl.classList.add('disabled');
         } else {
-          // ESTRATEGIA VISUAL: Añadir punto verde (has-slots) en días hábiles próximos (próximos 14 días)
-          var isWeekend = thisDate.getDay() === 0 || thisDate.getDay() === 6;
+          // ESTRATEGIA VISUAL: Añadir punto verde (has-slots) en días hábiles y sábados próximos (próximos 14 días)
+          var isSunday = thisDate.getDay() === 0;
           var daysDiff = Math.floor((thisDate - today) / (1000 * 60 * 60 * 24));
-          if (!isWeekend && daysDiff >= 0 && daysDiff <= 14) {
+          if (!isSunday && daysDiff >= 0 && daysDiff <= 14) {
             dayEl.classList.add('has-slots');
           }
 
