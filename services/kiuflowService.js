@@ -272,12 +272,12 @@ const kiuflowService = {
 
   getSurvey: async (surveyId, suscriptionId = SUB_ID, jwtToken = null) => {
     const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/get`;
-    return jwtToken ? postWithToken(endpoint, {}, jwtToken) : postPublic(endpoint, {});
+    return jwtToken ? postWithToken(endpoint, {}, jwtToken) : post(endpoint, {});
   },
 
   getSurveyQuestions: async (surveyId, suscriptionId = SUB_ID, jwtToken = null) => {
     const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/question/list`;
-    return jwtToken ? postWithToken(endpoint, {}, jwtToken) : postPublic(endpoint, {});
+    return jwtToken ? postWithToken(endpoint, {}, jwtToken) : post(endpoint, {});
   },
 
   submitSurveyComplete: async (surveyId, clientId, answers, suscriptionId = SUB_ID, jwtToken = null) => {
@@ -286,7 +286,7 @@ const kiuflowService = {
     try {
       const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/create`;
       const payload = { clientId: String(clientId) };
-      submission = jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await postPublic(endpoint, payload);
+      submission = jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await post(endpoint, payload);
     } catch (err) {
       throw new Error(`Error creando submission: ${err.message}`);
     }
@@ -315,7 +315,7 @@ const kiuflowService = {
 
       try {
         const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/response/create`;
-        const res = jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await postPublic(endpoint, payload);
+        const res = jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await post(endpoint, payload);
         results.push(res);
       } catch (err) {
         console.error(`Error guardando respuesta a pregunta ${ans.questionId}:`, err.message);
@@ -326,7 +326,7 @@ const kiuflowService = {
     try {
       const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/${finalSubId}/update`;
       const payload = { status: "COMPLETED" };
-      jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await postPublic(endpoint, payload);
+      jwtToken ? await postWithToken(endpoint, payload, jwtToken) : await post(endpoint, payload);
     } catch (err) {
       console.error(`Error cerrando el submission ${finalSubId}:`, err.message);
     }
