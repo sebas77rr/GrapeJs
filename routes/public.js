@@ -407,8 +407,9 @@ router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
       return res.status(400).json({ error: "Este funnel no tiene encuesta válida" });
     }
 
-    // 2. Enviar las respuestas a KiuFlow usando el JWT
-    await kiuflowService.submitSurveyComplete(surveyId, clientId, answers, subIdToUse, jwtToken);
+    // 2. Enviar las respuestas a KiuFlow usando la llave maestra del servidor
+    // (El JWT del Funnel no tiene permisos de escritura en submissions)
+    await kiuflowService.submitSurveyComplete(surveyId, clientId, answers, subIdToUse);
 
     res.json({ success: true });
   } catch (error) {
