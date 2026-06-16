@@ -37,7 +37,7 @@ function escapeJs(str) {
  * @param {Array}    opts.questions - Array of question objects from KiuFlow
  * @param {string}   [opts.apiBase] - Base URL of the builder backend
  */
-function renderSurveyPage({ surveyId, surveyName, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52' }) {
+function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52' }) {
   const validQuestions = (questions || []).filter(q => q != null);
   const totalQ = validQuestions.length;
   const safeTitle = escapeHtml(surveyName || 'Encuesta de Satisfacción');
