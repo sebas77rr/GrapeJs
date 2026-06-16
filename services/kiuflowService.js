@@ -58,6 +58,20 @@ async function postWithToken(endpoint, data = {}, jwtToken) {
   }
 }
 
+async function postPublic(endpoint, data = {}) {
+  const url = `${API_URL}${endpoint}`;
+  try {
+    const response = await axios.post(url, data, {
+      headers: { "Content-Type": "application/json" }
+    });
+    if (!response.data.success) throw new Error(response.data.message || "Error en la llamada a la API");
+    return response.data.data;
+  } catch (error) {
+    if (error.response) throw new Error(`API Error: ${error.response.data.message || error.message}`);
+    throw error;
+  }
+}
+
 async function get(endpoint) {
   const token = await getValidToken();
   const url = `${API_URL}${endpoint}`;
