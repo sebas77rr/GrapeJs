@@ -976,8 +976,14 @@ function renderFunnelForm(funnel) {
           reminders: ${JSON.stringify(funnel.reminders || [])}
         })
       })
-      .then(function(r) { return r.json(); })
-      .then(function() {
+      .then(function(r) { 
+        if (!r.ok) {
+          return r.json().then(function(err) { throw new Error(err.error || 'Error al confirmar la cita'); });
+        }
+        return r.json(); 
+      })
+      .then(function(data) {
+        if (data.error) throw new Error(data.error);
         var parts = selectedDate.split('-');
         var dateObj = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
         var days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -1001,9 +1007,9 @@ function renderFunnelForm(funnel) {
         showView('success');
         launchConfetti();
       })
-      .catch(function() {
+      .catch(function(err) {
         btn.disabled = false; btn.textContent = 'Confirmar cita →';
-        alert('Error al confirmar la cita. Intenta de nuevo.');
+        alert(err.message || 'Error al confirmar la cita. Intenta de nuevo.');
       });
     }
 

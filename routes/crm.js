@@ -105,13 +105,16 @@ router.post("/appointment", async (req, res) => {
     const endObj = new Date(startObj.getTime() + 30 * 60000);
 
     // Crear la cita
+    // Mantenemos el string original `date` (que trae el offset, ej. -05:00)
+    // para que el backend de KiuFlow valide correctamente las horas laborales locales.
+    // KiuFlow recalcula el endDate automáticamente.
     const apptData = {
       clientId: String(clientId),
-      date: startObj.toISOString(),
-      startDate: startObj.toISOString(),
-      start: startObj.toISOString(),
-      endDate: endObj.toISOString(),
-      end: endObj.toISOString(),
+      date: date,
+      startDate: date,
+      start: date,
+      endDate: date,
+      end: date,
       confirmed: "true",
       attended: "false",
       virtual: "true",
