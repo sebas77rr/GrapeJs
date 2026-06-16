@@ -328,7 +328,7 @@ router.get("/f/:code/survey", async (req, res) => {
 
     const jwtToken = funnelPage.jwt;
     const jd = funnelPage.jsonData || {};
-    const surveyId = jd.survey_id;
+    const surveyId = jd.surveyId || jd.survey_id;
     const subIdToUse = funnelPage.suscription_id || funnelPage.subscription_id || jd.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
     if (!surveyId) {
@@ -399,7 +399,8 @@ router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
     }
 
     const jwtToken = funnelPage?.jwt;
-    const surveyId = funnelPage?.jsonData?.survey_id;
+    const jd = funnelPage?.jsonData || {};
+    const surveyId = jd.surveyId || jd.survey_id;
     const subIdToUse = subId || funnelPage?.suscription_id || process.env.KIUFLOW_SUBSCRIPTION_ID;
 
     if (!jwtToken || !surveyId) {
