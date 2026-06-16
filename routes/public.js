@@ -414,7 +414,7 @@ router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Error guardando encuesta:", error.message);
-    res.status(500).json({ error: "Error interno al guardar las respuestas" });
+    res.status(500).json({ error: error.message });
   }
 });
 
