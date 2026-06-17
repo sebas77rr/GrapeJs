@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const { getValidToken, signClientUrl } = require("../services/kiuflowAuth");
 const kiuflowService = require("../services/kiuflowService");
-const { getValidToken } = require("../services/kiuflowAuth");
 
 // ──────────────────────────────────────────────────────────
 // GET /api/crm/channels
@@ -166,7 +166,8 @@ router.post("/appointment", async (req, res) => {
     if (surveyId && surveyChannelId && funnelId) {
       try {
         const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
-        const surveyUrl = `${domain}/s/${surveyId}?client=${clientId}&sub=${subIdToUse}&fid=${funnelId}`;
+        const hash = signClientUrl(clientId);
+        const surveyUrl = `${domain}/f/${funnelId}/survey?client=${clientId}&hash=${hash}`;
         const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
         const r5RemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
 
