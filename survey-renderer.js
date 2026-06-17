@@ -33,11 +33,12 @@ function escapeJs(str) {
  * @param {number}   opts.surveyId  - KiuFlow survey ID
  * @param {string}   opts.surveyName - Survey title
  * @param {string}   opts.clientId  - Client ID (for answer submission)
+ * @param {string}   opts.hash      - Client Hash
  * @param {string}   opts.subId     - Subscription ID
  * @param {Array}    opts.questions - Array of question objects from KiuFlow
  * @param {string}   [opts.apiBase] - Base URL of the builder backend
  */
-function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52', alreadyCompleted = false }) {
+function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, hash, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52', alreadyCompleted = false }) {
   const validQuestions = (questions || []).filter(q => q != null);
   const totalQ = validQuestions.length;
   const safeTitle = escapeHtml(surveyName || 'Encuesta de Satisfacción');
@@ -503,6 +504,7 @@ function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, q
     var SURVEY_ID = '${escapeHtml(String(surveyId))}';
     var FUNNEL_CODE = '${escapeHtml(String(funnelCode || ''))}';
     var CLIENT_ID = '${escapeHtml(String(clientId || ''))}';
+    var CLIENT_HASH = '${escapeHtml(String(hash || ''))}';
     var SUB_ID = '${escapeHtml(String(subId || ''))}';
     window.surveyAnswers = {};
 
@@ -556,6 +558,7 @@ function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, q
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: CLIENT_ID,
+          hash: CLIENT_HASH,
           subId: SUB_ID,
           answers: answersArray
         })

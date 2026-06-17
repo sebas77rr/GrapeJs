@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const { verifyClientUrl } = require("../services/kiuflowAuth");
 const kiuflowService = require("../services/kiuflowService");
 const { renderFunnelLanding, renderFunnelForm } = require("../funnel-renderer");
 const { renderSurveyPage } = require("../survey-renderer");
@@ -311,9 +312,17 @@ router.get(/^\/f\/.+\/form$/, async (req, res) => {
 router.get("/f/:code/survey", async (req, res) => {
   try {
     const { code } = req.params;
-    const { client: clientId } = req.query;
+    const { client: clientId, hash } = req.query;
 
     if (!code) return res.status(404).send("<h1>Funnel no especificado</h1>");
+    if (clientId && !verifyClientUrl(clientId, hash)) {
+      return res.status(403).send(`
+        <div style="font-family: sans-serif; padding: 40px; text-align: center;">
+          <h1 style="color: #DB2C52;">Acceso Denegado</h1>
+          <p style="color: #666; font-size: 1.1rem;">El enlace de la encuesta es inválido o ha sido modificado.</p>
+        </div>
+      `);
+    }
 
     // 1. Consultar el Funnel público
     let funnelPage = null;
@@ -378,6 +387,7 @@ router.get("/f/:code/survey", async (req, res) => {
       surveyName,
       funnelCode: code, // Pasamos el funnelCode para el submit final
       clientId: clientId || "",
+      hash: hash || "",
       subId: subIdToUse,
       questions,
       apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
@@ -400,10 +410,14 @@ router.get("/f/:code/survey", async (req, res) => {
 router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
   try {
     const { code } = req.params;
-    const { clientId, answers, subId } = req.body;
+    const { clientId, hash, answers, subId } = req.body;
 
     if (!code || !answers || !Array.isArray(answers)) {
       return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    if (clientId && !verifyClientUrl(clientId, hash)) {
+      return res.status(403).json({ error: "Acceso Denegado: Firma de cliente inválida" });
     }
 
     // 1. Obtener JWT y surveyId del Funnel

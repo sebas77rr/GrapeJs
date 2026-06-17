@@ -1,5 +1,6 @@
 const axios = require('axios');
 require('dotenv').config();
+const crypto = require('crypto');
 
 const KIUFLOW_API_URL = process.env.KIUFLOW_API_URL || "https://apiengine.kiuflow.online";
 const KIUFLOW_USERNAME = process.env.KIUFLOW_USERNAME;
@@ -103,6 +104,24 @@ async function getValidToken() {
 
 function getUserInfo() { return cachedUserInfo; }
 
+// ── Seguridad de URLs de Encuestas (HMAC) ──
+function signClientUrl(clientId) {
+  if (!clientId) return null;
+  const secret = process.env.JWT_SECRET || 'kiuflow-default-secret-2026';
+  return crypto.createHmac('sha256', secret).update(String(clientId)).digest('hex');
+}
+
+function verifyClientUrl(clientId, hash) {
+  if (!clientId || !hash) return false;
+  const expectedHash = signClientUrl(clientId);
+  // Usar validación segura contra ataques de timing
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expectedHash));
+  } catch (e) {
+    return false; // Error si las longitudes no coinciden
+  }
+}
+
 module.exports = {
   getValidToken,
   login,
@@ -110,4 +129,6 @@ module.exports = {
   setExternalToken,
   isExternalTokenValid,
   getUserInfo,
+  signClientUrl,
+  verifyClientUrl,
 };
