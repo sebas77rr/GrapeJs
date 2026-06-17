@@ -486,7 +486,11 @@ function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, q
     </div>
 
     <div class="finished-screen" id="finishedScreen" style="${alreadyCompleted ? 'display: block; margin-top: 0;' : 'display: none;'}">
-      <div class="icon">🎉</div>
+      <div class="icon" style="display: flex; justify-content: center; margin-bottom: 20px;">
+        ${alreadyCompleted 
+          ? '<svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+          : '<svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'}
+      </div>
       <h2>${alreadyCompleted ? '¡Ya respondiste esta encuesta!' : '¡Muchas gracias!'}</h2>
       <p>${alreadyCompleted ? 'Hemos registrado tus respuestas anteriormente. ¡Gracias por participar!' : 'Hemos recibido todas tus respuestas.<br>Tu opinión es muy valiosa para nosotros.'}</p>
     </div>
