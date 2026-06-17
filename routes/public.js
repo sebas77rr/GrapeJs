@@ -341,6 +341,23 @@ router.get("/f/:code/survey", async (req, res) => {
     // 2. Cargar nombre y preguntas de la encuesta usando el JWT del Funnel
     let surveyName = "Encuesta de Satisfacción";
     let questions = [];
+    let alreadyCompleted = false;
+
+    try {
+      if (clientId) {
+        const submissionsRes = await kiuflowService.getSurveySubmissions(surveyId, subIdToUse, jwtToken);
+        const allSubmissions = Array.isArray(submissionsRes) ? submissionsRes : (submissionsRes?.data || []);
+        const hasCompleted = allSubmissions.some(s => 
+          String(s.client?.id) === String(clientId) && 
+          s.status === "COMPLETED"
+        );
+        if (hasCompleted) {
+          alreadyCompleted = true;
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudieron verificar las sumisiones previas:", e.message);
+    }
 
     try {
       const surveyRes = await kiuflowService.getSurvey(surveyId, subIdToUse, jwtToken);
@@ -366,6 +383,7 @@ router.get("/f/:code/survey", async (req, res) => {
       apiBase: process.env.APP_DOMAIN || "https://builder.kiuflow.online",
       logoUrl,
       brandColor,
+      alreadyCompleted,
     });
 
     res.send(html);
@@ -407,7 +425,24 @@ router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
       return res.status(400).json({ error: "Este funnel no tiene encuesta válida" });
     }
 
-    // 2. Enviar las respuestas a KiuFlow usando el JWT público del Funnel
+    // 2. Verificar si ya completó
+    try {
+      if (clientId) {
+        const submissionsRes = await kiuflowService.getSurveySubmissions(surveyId, subIdToUse, jwtToken);
+        const allSubmissions = Array.isArray(submissionsRes) ? submissionsRes : (submissionsRes?.data || []);
+        const hasCompleted = allSubmissions.some(s => 
+          String(s.client?.id) === String(clientId) && 
+          s.status === "COMPLETED"
+        );
+        if (hasCompleted) {
+          return res.status(400).json({ error: "Ya respondiste esta encuesta anteriormente." });
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudo verificar sumisión previa en el POST:", e.message);
+    }
+
+    // 3. Enviar las respuestas a KiuFlow usando el JWT público del Funnel
     await kiuflowService.submitSurveyComplete(surveyId, clientId, answers, subIdToUse, jwtToken);
 
     res.json({ success: true });

@@ -280,6 +280,11 @@ const kiuflowService = {
     return jwtToken ? postWithToken(endpoint, {}, jwtToken) : post(endpoint, {});
   },
 
+  getSurveySubmissions: async (surveyId, suscriptionId = SUB_ID, jwtToken = null) => {
+    const endpoint = `/api/v1/suscription/${suscriptionId}/survey/${surveyId}/submission/list`;
+    return jwtToken ? postWithToken(endpoint, { maxRows: 1000 }, jwtToken) : post(endpoint, { maxRows: 1000 });
+  },
+
   submitSurveyComplete: async (surveyId, clientId, answers, suscriptionId = SUB_ID, jwtToken = null) => {
     // Paso 1: Crear el Submission (el "sobre")
     let submission;

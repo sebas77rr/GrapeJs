@@ -37,7 +37,7 @@ function escapeJs(str) {
  * @param {Array}    opts.questions - Array of question objects from KiuFlow
  * @param {string}   [opts.apiBase] - Base URL of the builder backend
  */
-function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52' }) {
+function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, questions, apiBase = '', logoUrl = '', brandColor = '#DB2C52', alreadyCompleted = false }) {
   const validQuestions = (questions || []).filter(q => q != null);
   const totalQ = validQuestions.length;
   const safeTitle = escapeHtml(surveyName || 'Encuesta de Satisfacción');
@@ -458,25 +458,25 @@ function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, q
 <body>
 
   <!-- Header -->
-  <header class="header">
+  <header class="header" style="${alreadyCompleted ? 'display: none;' : ''}">
     <div class="header-logo">
       ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="Logo" style="max-height: 28px; object-fit: contain;">` : 'Encuesta'}
     </div>
     <div class="header-counter" id="counter">0 / ${totalQ} respondidas</div>
   </header>
-  <div class="progress-bar-wrap">
+  <div class="progress-bar-wrap" style="${alreadyCompleted ? 'display: none;' : ''}">
     <div class="progress-bar-fill" id="progressBar"></div>
   </div>
 
   <!-- Content -->
   <div class="page-wrapper">
-    <div class="survey-hero">
+    <div class="survey-hero" style="${alreadyCompleted ? 'display: none;' : ''}">
       <div class="q-count">${totalQ} preguntas</div>
       <h1>${safeTitle}</h1>
       <p>Tus respuestas nos ayudan a mejorar. Solo toma un momento.</p>
     </div>
 
-    <div id="questionsContainer">
+    <div id="questionsContainer" style="${alreadyCompleted ? 'display: none;' : ''}">
       ${questionsHtml}
     </div>
 
@@ -485,10 +485,10 @@ function renderSurveyPage({ surveyId, surveyName, funnelCode, clientId, subId, q
       <div class="answer-feedback" id="final-feedback"></div>
     </div>
 
-    <div class="finished-screen" id="finishedScreen">
+    <div class="finished-screen" id="finishedScreen" style="${alreadyCompleted ? 'display: block; margin-top: 0;' : 'display: none;'}">
       <div class="icon">🎉</div>
-      <h2>¡Muchas gracias!</h2>
-      <p>Hemos recibido todas tus respuestas.<br>Tu opinión es muy valiosa para nosotros.</p>
+      <h2>${alreadyCompleted ? '¡Ya respondiste esta encuesta!' : '¡Muchas gracias!'}</h2>
+      <p>${alreadyCompleted ? 'Hemos registrado tus respuestas anteriormente. ¡Gracias por participar!' : 'Hemos recibido todas tus respuestas.<br>Tu opinión es muy valiosa para nosotros.'}</p>
     </div>
   </div>
 
