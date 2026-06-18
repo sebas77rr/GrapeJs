@@ -98,7 +98,9 @@ app.get("/api/kiuflow/status", async (req, res) => {
         userName = myAdmin.user.name || myAdmin.name || "Admin";
         userRole = myAdmin.propietary ? "Propietario" : "Admin";
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silenciar error si la suscripción no tiene admins o no se encontró
+    }
 
     res.json({
       connected: true,
@@ -160,10 +162,18 @@ app.get("/api/kiuflow/user-settings", async (req, res) => {
 
 /**
  * Catch-all Handler (Single Page Application fallback)
- * Redirige cualquier petición no capturada hacia la app de React estática.
+ * Solo actúa si el frontend está en la misma máquina que el backend.
+ * En producción, el frontend corre como servidor separado, así que
+ * este handler simplemente devuelve 404 en vez de tirar un error ENOENT.
  */
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  const indexPath = path.join(__dirname, "../frontend/dist/index.html");
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      // Frontend no está en esta máquina (entorno producción separado)
+      res.status(404).json({ error: "Not found" });
+    }
+  });
 });
 
 // Arrancar server
