@@ -130,22 +130,12 @@ router.post("/appointment", async (req, res) => {
     const appointment = resultRes.data.data;
     const appointmentId = String(appointment?.id || "");
 
-    // ── Obtener el JWT del Funnel para los recordatorios ──
-    // El endpoint de recordatorios de KiuFlow requiere el JWT del Funnel,
-    // no el token de servicio. Igual que se hace en las encuestas (routes/public.js).
-    let reminderHeaders = authHeaders; // fallback al token de servicio
-    if (funnelId) {
-      try {
-        const funnelPage = await kiuflowService.getWebpage(funnelId, subIdToUse);
-        const funnelJwt = funnelPage?.jwt;
-        if (funnelJwt) {
-          reminderHeaders = { Authorization: `Bearer ${funnelJwt}`, "Content-Type": "application/json" };
-          console.log(`✅ JWT del Funnel obtenido para recordatorios (funnelId: ${funnelId})`);
-        }
-      } catch (e) {
-        console.warn("No se pudo obtener JWT del Funnel para recordatorios, usando token de servicio:", e.message);
-      }
-    }
+    // ── Usar el Token de Servicio (Admin) para los recordatorios ──
+    // El JWT del Funnel (en authHeaders) permite crear la cita, pero NO crear recordatorios.
+    // Por eso KiuFlow rechaza la creación de recordatorios con 403.
+    // Usamos explícitamente el token de servicio del backend con permisos de admin.
+    const serviceToken = await getValidToken();
+    const reminderHeaders = { Authorization: `Bearer ${serviceToken}`, "Content-Type": "application/json" };
 
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
 
