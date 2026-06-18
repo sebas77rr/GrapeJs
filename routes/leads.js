@@ -44,30 +44,23 @@ router.post("/:funnelId/leads", async (req, res) => {
       ...(channelId && { channelId }),
     };
 
-    // Obtener token: primero el del usuario (SSO), luego el de servicio
-    const axios = require("axios");
-    const authToken = req.headers.authorization || `Bearer ${await getValidToken()}`;
-    const authHeaders = { Authorization: authToken, "Content-Type": "application/json" };
-
     // Crear cliente en KiuFlow
-    const clientRes = await axios.post(
-      `${API_URL}/api/v1/suscription/${subIdToUse}/client/create`,
-      clientData,
-      { headers: authHeaders }
-    );
-    if (!clientRes.data.success) throw new Error(clientRes.data.message);
-    const clientId = clientRes.data.data.id;
+    const clientRes = await kiuflowService.createClient(clientData, subIdToUse);
+    // kiuflowService.createClient ya desenvuelve la respuesta (retorna response.data.data)
+    const clientId = clientRes.id;
 
     // R1: Recordatorio de bienvenida (si está habilitado en la config del Funnel)
     const r1 = Array.isArray(reminders) ? reminders[0] : null;
     if (r1?.channelId && r1?.enabled) {
       const remindAt = new Date(Date.now() + 5 * 60000).toISOString();
       try {
-        await axios.post(
-          `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-          { clientId: String(clientId), channelId: r1.channelId, templateId: r1.templateId || null, content: r1.content, remindAt },
-          { headers: authHeaders }
-        );
+        await kiuflowService.createReminder({
+          clientId: String(clientId),
+          channelId: r1.channelId,
+          templateId: r1.templateId || null,
+          content: r1.content,
+          remindAt
+        }, subIdToUse);
       } catch (err) {
         console.error("Error creando R1 (bienvenida):", err.message);
       }
