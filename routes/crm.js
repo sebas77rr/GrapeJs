@@ -130,7 +130,25 @@ router.post("/appointment", async (req, res) => {
     const appointment = resultRes.data.data;
     const appointmentId = String(appointment?.id || "");
 
+    // ── Obtener el JWT del Funnel para los recordatorios ──
+    // El endpoint de recordatorios de KiuFlow requiere el JWT del Funnel,
+    // no el token de servicio. Igual que se hace en las encuestas (routes/public.js).
+    let reminderHeaders = authHeaders; // fallback al token de servicio
+    if (funnelId) {
+      try {
+        const funnelPage = await kiuflowService.getWebpage(funnelId, subIdToUse);
+        const funnelJwt = funnelPage?.jwt;
+        if (funnelJwt) {
+          reminderHeaders = { Authorization: `Bearer ${funnelJwt}`, "Content-Type": "application/json" };
+          console.log(`✅ JWT del Funnel obtenido para recordatorios (funnelId: ${funnelId})`);
+        }
+      } catch (e) {
+        console.warn("No se pudo obtener JWT del Funnel para recordatorios, usando token de servicio:", e.message);
+      }
+    }
+
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
+
     if (Array.isArray(reminders)) {
       // R1: Confirmación inmediata al agendar
       const rem1 = reminders[0];
@@ -140,7 +158,7 @@ router.post("/appointment", async (req, res) => {
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
             { appointmentId, clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: r1RemindAt },
-            { headers: authHeaders }
+            { headers: reminderHeaders }
           );
         } catch (err) { console.error("Error creando R1:", err.message); }
       }
@@ -155,7 +173,7 @@ router.post("/appointment", async (req, res) => {
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
             { appointmentId, clientId: String(clientId), channelId: rem.channelId, templateId: rem.templateId || null, content: rem.content, remindAt },
-            { headers: authHeaders }
+            { headers: reminderHeaders }
           );
         } catch (err) { console.error(`Error creando R${i + 2}:`, err.message); }
       }
@@ -178,7 +196,7 @@ router.post("/appointment", async (req, res) => {
         await axios.post(
           `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
           { appointmentId, clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: r5RemindAt },
-          { headers: authHeaders }
+          { headers: reminderHeaders }
         );
         console.log(`✅ R5 (encuesta) programado para el cliente ${clientId} a las ${r5RemindAt}`);
       } catch (surveyErr) {
