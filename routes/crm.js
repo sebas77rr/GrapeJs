@@ -128,6 +128,7 @@ router.post("/appointment", async (req, res) => {
     );
     if (!resultRes.data.success) throw new Error(resultRes.data.message);
     const appointment = resultRes.data.data;
+    const appointmentId = String(appointment?.id || "");
 
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
     if (Array.isArray(reminders)) {
@@ -138,7 +139,7 @@ router.post("/appointment", async (req, res) => {
           const r1RemindAt = new Date(Date.now() + 10000).toISOString();
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-            { clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: r1RemindAt },
+            { appointmentId, clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: r1RemindAt },
             { headers: authHeaders }
           );
         } catch (err) { console.error("Error creando R1:", err.message); }
@@ -153,7 +154,7 @@ router.post("/appointment", async (req, res) => {
         try {
           await axios.post(
             `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-            { clientId: String(clientId), channelId: rem.channelId, templateId: rem.templateId || null, content: rem.content, remindAt },
+            { appointmentId, clientId: String(clientId), channelId: rem.channelId, templateId: rem.templateId || null, content: rem.content, remindAt },
             { headers: authHeaders }
           );
         } catch (err) { console.error(`Error creando R${i + 2}:`, err.message); }
@@ -166,14 +167,17 @@ router.post("/appointment", async (req, res) => {
     if (surveyId && surveyChannelId && funnelId) {
       try {
         const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
-        const hash = signClientUrl(clientId);
+        const hash = signClientUrl(String(clientId));
+        // funnelId puede ser el ID numérico (60) o el código alfanumérico del funnel.
+        // La URL pública de la encuesta usa el código del funnel (ej: 2LEBGTGHL4IZdVRb).
+        // El frontend envía el funnelCode en el campo funnelId desde el componente.
         const surveyUrl = `${domain}/f/${funnelId}/survey?client=${clientId}&hash=${hash}`;
         const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
         const r5RemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
 
         await axios.post(
           `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-          { clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: r5RemindAt },
+          { appointmentId, clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: r5RemindAt },
           { headers: authHeaders }
         );
         console.log(`✅ R5 (encuesta) programado para el cliente ${clientId} a las ${r5RemindAt}`);
