@@ -741,8 +741,8 @@ function renderFunnelForm(funnel) {
   (function() {
     var FUNNEL_ID = '${funnel.id}';
     var SUB_ID = '${funnel.sub_id || ""}';
-    var SURVEY_ID = '${funnel.surveyId || ""}';
-    var SURVEY_CHANNEL_ID = '${funnel.defaultChannelId || ""}';
+    var SURVEY_ID = '${funnel.surveyId || funnel.survey_id || ""}';
+    var SURVEY_CHANNEL_ID = '${funnel.defaultChannelId || funnel.default_channel_id || funnel.channelId || funnel.channel_id || ""}';
     var SURVEY_LOGO_URL = '${(funnel.use_funnel_logo ? funnel.logo_url : funnel.survey_logo_url) || ""}';
     var SURVEY_COLOR = '${funnel.survey_highlight_color || ""}';
     var FIELDS = ${JSON.stringify(parsedFields)};
