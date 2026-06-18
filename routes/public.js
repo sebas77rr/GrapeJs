@@ -26,14 +26,19 @@ router.get("/api/public/appointment", async (req, res) => {
       return res.status(400).json({ error: "Faltan parámetros requeridos" });
     }
 
-    const appointments = await kiuflowService.getAppointments(sub_id);
-    if (!appointments || appointments.length === 0) {
+    let appointments = await kiuflowService.getAppointments(sub_id);
+    let safeAppts = [];
+    if (Array.isArray(appointments)) safeAppts = appointments;
+    else if (appointments && Array.isArray(appointments.data)) safeAppts = appointments.data;
+    else if (appointments && Array.isArray(appointments.items)) safeAppts = appointments.items;
+
+    if (safeAppts.length === 0) {
       return res.status(404).json({ error: "No se encontraron citas" });
     }
 
     const now = new Date();
-    const clientAppointments = appointments
-      .filter((a) => a.client && a.client.id === parseInt(client_id, 10))
+    const clientAppointments = safeAppts
+      .filter((a) => a.client && String(a.client.id) === String(client_id))
       .filter((a) => new Date(a.startDate) >= now || new Date(a.endDate) >= now)
       .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
@@ -47,6 +52,8 @@ router.get("/api/public/appointment", async (req, res) => {
       startDate: appt.startDate,
       endDate: appt.endDate,
       confirmed: appt.confirmed,
+      meetingUrl: appt.meetingUrl || appt.meeting_url || appt.zoomLink || null,
+      agentName: appt.agent?.name || "Agente Asignado"
     });
   } catch (error) {
     console.error("Error buscando cita pública:", error.message);

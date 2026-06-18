@@ -132,21 +132,8 @@ router.post("/appointment", async (req, res) => {
 
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
     if (Array.isArray(reminders)) {
-      // R1: Confirmación inmediata al agendar
-      const rem1 = reminders[0];
-      if (rem1?.channelId) {
-        try {
-          const r1RemindAt = new Date(Date.now() + 10000).toISOString();
-          await kiuflowService.createReminder({
-            appointmentId,
-            clientId: String(clientId),
-            channelId: rem1.channelId,
-            templateId: rem1.templateId || null,
-            content: rem1.content,
-            remindAt: r1RemindAt
-          }, subIdToUse);
-        } catch (err) { console.error("Error creando R1:", err.message); }
-      }
+      // R1 (Bienvenida/Confirmación inmediata) ya se crea en leads.js al registrar el lead.
+      // Así evitamos que se duplique al momento de agendar la cita.
 
       // R2 (24h antes), R3 (3h antes), R4 (5 min antes)
       const OFFSETS = [24 * 3600000, 3 * 3600000, 5 * 60000];
