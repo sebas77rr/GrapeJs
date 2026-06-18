@@ -456,8 +456,8 @@ router.post("/api/public/funnel/:code/survey/submit-all", async (req, res) => {
       console.warn("No se pudo verificar sumisión previa en el POST:", e.message);
     }
 
-    // 3. Enviar las respuestas a KiuFlow usando el Token Maestro del servidor (con plenos permisos)
-    await kiuflowService.submitSurveyComplete(surveyId, clientId, answers, subIdToUse, null);
+    // 3. Enviar las respuestas a KiuFlow usando el JWT público del Funnel
+    await kiuflowService.submitSurveyComplete(surveyId, clientId, answers, subIdToUse, jwtToken);
 
     res.json({ success: true });
   } catch (error) {
