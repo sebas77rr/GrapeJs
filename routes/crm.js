@@ -130,36 +130,21 @@ router.post("/appointment", async (req, res) => {
     const appointment = resultRes.data.data;
     const appointmentId = String(appointment?.id || "");
 
-    // ── Obtener el JWT del Funnel para los recordatorios ──
-    // El endpoint de recordatorios de KiuFlow requiere el JWT del Funnel,
-    // no el token de servicio. Igual que se hace en las encuestas (routes/public.js).
-    let reminderHeaders = authHeaders; // fallback al token de servicio
-    if (funnelId) {
-      try {
-        const funnelPage = await kiuflowService.getWebpage(funnelId, subIdToUse);
-        const funnelJwt = funnelPage?.jwt;
-        if (funnelJwt) {
-          reminderHeaders = { Authorization: `Bearer ${funnelJwt}`, "Content-Type": "application/json" };
-          console.log(`✅ JWT del Funnel obtenido para recordatorios (funnelId: ${funnelId})`);
-        }
-      } catch (e) {
-        console.warn("No se pudo obtener JWT del Funnel para recordatorios, usando token de servicio:", e.message);
-      }
-    }
-
     // ── Recordatorios R1–R4 (solo si el Funnel los tiene configurados) ──
-
     if (Array.isArray(reminders)) {
       // R1: Confirmación inmediata al agendar
       const rem1 = reminders[0];
       if (rem1?.channelId) {
         try {
           const r1RemindAt = new Date(Date.now() + 10000).toISOString();
-          await axios.post(
-            `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-            { appointmentId, clientId: String(clientId), channelId: rem1.channelId, templateId: rem1.templateId || null, content: rem1.content, remindAt: r1RemindAt },
-            { headers: reminderHeaders }
-          );
+          await kiuflowService.createReminder({
+            appointmentId,
+            clientId: String(clientId),
+            channelId: rem1.channelId,
+            templateId: rem1.templateId || null,
+            content: rem1.content,
+            remindAt: r1RemindAt
+          }, subIdToUse);
         } catch (err) { console.error("Error creando R1:", err.message); }
       }
 
@@ -169,12 +154,17 @@ router.post("/appointment", async (req, res) => {
         const rem = reminders[i + 1];
         if (!rem?.channelId) continue;
         const remindAt = new Date(startObj.getTime() - OFFSETS[i]).toISOString();
+        if (new Date(remindAt) <= new Date()) continue;
+
         try {
-          await axios.post(
-            `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-            { appointmentId, clientId: String(clientId), channelId: rem.channelId, templateId: rem.templateId || null, content: rem.content, remindAt },
-            { headers: reminderHeaders }
-          );
+          await kiuflowService.createReminder({
+            appointmentId,
+            clientId: String(clientId),
+            channelId: rem.channelId,
+            templateId: rem.templateId || null,
+            content: rem.content,
+            remindAt
+          }, subIdToUse);
         } catch (err) { console.error(`Error creando R${i + 2}:`, err.message); }
       }
     }
@@ -193,11 +183,13 @@ router.post("/appointment", async (req, res) => {
         const surveyMessage = `¡Hola! Esperamos que tu sesión haya sido excelente. ¿Nos regalas 2 minutos para contarnos cómo te fue? Tu opinión nos ayuda a mejorar cada día 🙏\n\n👉 ${surveyUrl}`;
         const r5RemindAt = new Date(endObj.getTime() + 60 * 60000).toISOString();
 
-        await axios.post(
-          `${API_URL}/api/v1/suscription/${subIdToUse}/appointment/reminders/create`,
-          { appointmentId, clientId: String(clientId), channelId: surveyChannelId, content: surveyMessage, remindAt: r5RemindAt },
-          { headers: reminderHeaders }
-        );
+        await kiuflowService.createReminder({
+          appointmentId,
+          clientId: String(clientId),
+          channelId: surveyChannelId,
+          content: surveyMessage,
+          remindAt: r5RemindAt
+        }, subIdToUse);
         console.log(`✅ R5 (encuesta) programado para el cliente ${clientId} a las ${r5RemindAt}`);
       } catch (surveyErr) {
         console.error("Error creando R5 (encuesta):", surveyErr.message);
