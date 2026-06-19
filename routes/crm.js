@@ -141,9 +141,9 @@ router.post("/appointment", async (req, res) => {
         const metaObj = {
           suscription_id: String(subIdToUse),
           client_id: String(clientId),
-          client_name: clientData.name || "Sin Nombre",
-          client_phone: clientData.phone || "Sin Teléfono",
-          client_email: clientData.email || "Sin Email",
+          client_name: appointment.client?.name || "Sin Nombre",
+          client_phone: appointment.client?.phone || "Sin Teléfono",
+          client_email: appointment.client?.email || "Sin Email",
           agent_id: String(appointment.agent_id || "-1"),
           agent_name: appointment.agent?.name || "Sin datos",
           agent_phone: appointment.agent?.phone || "Sin datos",
