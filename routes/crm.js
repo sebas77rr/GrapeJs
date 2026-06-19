@@ -137,21 +137,46 @@ router.post("/appointment", async (req, res) => {
 
       // R2 (24h antes), R3 (3h antes), R4 (5 min antes)
       const OFFSETS = [24 * 3600000, 3 * 3600000, 5 * 60000];
-      for (let i = 0; i < OFFSETS.length; i++) {
-        const rem = reminders[i + 1];
-        if (!rem?.channelId) continue;
-        const remindAt = new Date(startObj.getTime() - OFFSETS[i]).toISOString();
-        if (new Date(remindAt) <= new Date()) continue;
+        const domain = process.env.APP_DOMAIN || "https://builder.kiuflow.online";
+        const metaObj = {
+          suscription_id: String(subIdToUse),
+          client_id: String(clientId),
+          client_name: clientData.name || "Sin Nombre",
+          client_phone: clientData.phone || "Sin Teléfono",
+          client_email: clientData.email || "Sin Email",
+          agent_id: String(appointment.agent_id || "-1"),
+          agent_name: appointment.agent?.name || "Sin datos",
+          agent_phone: appointment.agent?.phone || "Sin datos",
+          agent_email: appointment.agent?.email || "Sin datos",
+          conversation_id: String(appointment.conversation_id || ""),
+          appointment_id: appointmentId,
+          startDate: appointment.startDate || date,
+          endDate: appointment.endDate || endObj.toISOString(),
+          meetingUrl: appointment.meetingUrl || appointment.meeting_url || appointment.zoomLink || ""
+        };
+        const encodedMeta = Buffer.from(JSON.stringify(metaObj)).toString("base64");
+        const callUrl = `${domain}/call?metadata=${encodedMeta}`;
 
-        try {
-          await kiuflowService.createReminder({
-            appointmentId,
-            clientId: String(clientId),
-            channelId: rem.channelId,
-            templateId: rem.templateId || null,
-            content: rem.content,
-            remindAt
-          }, subIdToUse);
+        for (let i = 0; i < OFFSETS.length; i++) {
+          const rem = reminders[i + 1];
+          if (!rem?.channelId) continue;
+          const remindAt = new Date(startObj.getTime() - OFFSETS[i]).toISOString();
+          if (new Date(remindAt) <= new Date()) continue;
+
+          let finalContent = rem.content || "";
+          if (finalContent.includes("{{url}}")) {
+            finalContent = finalContent.replace(/\{\{url\}\}/g, callUrl);
+          }
+
+          try {
+            await kiuflowService.createReminder({
+              appointmentId,
+              clientId: String(clientId),
+              channelId: rem.channelId,
+              templateId: rem.templateId || null,
+              content: finalContent,
+              remindAt
+            }, subIdToUse);
         } catch (err) { console.error(`Error creando R${i + 2}:`, err.message); }
       }
     }
