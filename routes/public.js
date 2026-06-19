@@ -32,14 +32,14 @@ router.get("/api/public/appointment", async (req, res) => {
     else if (appointments && Array.isArray(appointments.data)) safeAppts = appointments.data;
     else if (appointments && Array.isArray(appointments.items)) safeAppts = appointments.items;
 
-    if (safeAppts.length === 0) {
+    if (!safeAppts || safeAppts.length === 0) {
       return res.status(404).json({ error: "No se encontraron citas" });
     }
 
     const now = new Date();
     const clientAppointments = safeAppts
-      .filter((a) => a.client && String(a.client.id) === String(client_id))
-      .filter((a) => new Date(a.startDate) >= now || new Date(a.endDate) >= now)
+      .filter((a) => a && a.client && String(a.client.id) === String(client_id))
+      .filter((a) => a.startDate && (new Date(a.startDate) >= now || (a.endDate && new Date(a.endDate) >= now)))
       .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
     if (clientAppointments.length === 0) {
